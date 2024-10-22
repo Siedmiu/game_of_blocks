@@ -243,7 +243,7 @@ int main() {
             //Gravity
             if (!world.onTheFloor) {
                 fallingVelocity += GRAVITY * TIMESTEP;
-                cam.moveDown(fallingVelocity * TIMESTEP);
+                //cam.moveDown(fallingVelocity * TIMESTEP);
             }
             else if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
                 fallingVelocity = JUMP_SPEED;

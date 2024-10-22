@@ -1,7 +1,26 @@
 #include "world.h"
 #include <iostream>
+#include <chrono>
+#include <thread>
 
 world::world(const player& playerOne, camera& cam) : playerOne(playerOne), cam(cam) {}
+
+world::overlapInfoTruncation world::overlapAABBtruncation(const player::Aabb& playerAABB, const player::Aabb& blockAABB) {
+    overlapInfoTruncation info;
+
+	if (playerAABB.max.x < blockAABB.min.x || playerAABB.min.x > blockAABB.max.x ||
+		playerAABB.max.y < blockAABB.min.y || playerAABB.min.y > blockAABB.max.y ||
+		playerAABB.max.z < blockAABB.min.z || playerAABB.min.z > blockAABB.max.z) {
+		info.isOverlapping = false;
+		return info;
+	}
+	
+	if (playerAABB.max.x - blockAABB.min.x < blockAABB.max.x - playerAABB.min.x) info.overlapX = overlapInfoTruncation::DimensionOverlap::negative; else info.overlapX = overlapInfoTruncation::DimensionOverlap::positive;
+	if (playerAABB.max.y - blockAABB.min.y < blockAABB.max.y - playerAABB.min.y) info.overlapY = overlapInfoTruncation::DimensionOverlap::negative; else info.overlapY = overlapInfoTruncation::DimensionOverlap::positive;
+	if (playerAABB.max.z - blockAABB.min.z < blockAABB.max.z - playerAABB.min.z) info.overlapZ = overlapInfoTruncation::DimensionOverlap::negative; else info.overlapZ = overlapInfoTruncation::DimensionOverlap::positive;
+
+	return info;
+}
 
 world::overlapInfo world::overlapAABB(const player::Aabb& playerAABB, const player::Aabb& blockAABB) {
     overlapInfo info = { true, 0.0f, 0.0f, 0.0f };
@@ -19,19 +38,20 @@ world::overlapInfo world::overlapAABB(const player::Aabb& playerAABB, const play
 }
 
 void world::AABBcolisionDetection() {
+	//auto t1 = std::chrono::high_resolution_clock::now();
 	player::Aabb playerAABB = playerOne.getPlayerAABB();
 	player::Aabb blockAABB{};
 	playerPosition = playerOne.getPlayerPosition();
 	glm::vec2 playerChunk = playerOne.getPlayerChunk();
-	float checkRadius = 0.6f, playerHeight05 = player::PLAYERHEIGHT * 0.5f, playerWidth05 = player::PLAYERWIDTH * 0.5f;
+	const float checkRadius = 0.5f, PLAYERHEIGHT = player::PLAYERHEIGHT, playerWidthHalf = player::PLAYERWIDTH * 0.5f;
 	int blockX, blockY, blockChunkX, blockChunkY;
-	glm::vec3 move(0.0f);
-	float moveX = 0.0, moveY = 0.0, moveZ = 0.0;
+	overlapInfoTruncation::DimensionOverlap xOverlap{}, yOverlap{}, zOverlap{};
 
-	for (int x = (int)(playerPosition.x - 0.5 - checkRadius - playerWidth05); x <= (int)(playerPosition.x + checkRadius + playerWidth05); x++) {
-		for (int y = (int)(playerPosition.y - 0.5 - checkRadius - playerWidth05); y <= (int)(playerPosition.y + checkRadius + playerWidth05); y++) {
-			for (int z = (int)(playerPosition.z -1 - checkRadius - playerHeight05); z <= (int)(playerPosition.z + checkRadius); z++) {
+	for (int x = (int)(playerPosition.x - checkRadius - playerWidthHalf); x <= (int)(playerPosition.x + checkRadius + playerWidthHalf); x++) {
+		for (int y = (int)(playerPosition.y - checkRadius - playerWidthHalf); y <= (int)(playerPosition.y + checkRadius + playerWidthHalf); y++) {
+			for (int z = (int)(playerPosition.z - checkRadius - PLAYERHEIGHT); z <= (ceil)(playerPosition.z + checkRadius); z++) {
 				if (z < 0 || z >= CHUNK_HEIGHT) continue;
+				//if (xOverlap == overlapInfoTruncation::DimensionOverlap::none || yOverlap == overlapInfoTruncation::DimensionOverlap::none || zOverlap == overlapInfoTruncation::DimensionOverlap::none) break;
 
 				blockChunkX = playerChunk.x;
 				blockChunkY = playerChunk.y;
@@ -69,20 +89,83 @@ void world::AABBcolisionDetection() {
 					blockAABB.max.y = y + 1.0f;
 					blockAABB.max.z = z + 1.0f;
 
+					//coordinates method
+					/*
 					overlapInfo overlapInfo = overlapAABB(playerAABB, blockAABB);
 
 					if (overlapInfo.isOverlapping) {
 						float minOverlap = std::min({ overlapInfo.overlapX, overlapInfo.overlapY, overlapInfo.overlapZ });
 
-						if (z <= playerPosition.z - 0.4f - player::PLAYERHEIGHT) {
+						//determine the push back
+						if (minOverlap == overlapInfo.overlapZ && z < playerPosition.z - player::PLAYERHEIGHT) {
 							moveZ = overlapInfo.overlapZ;
+						} else
+						if (minOverlap == overlapInfo.overlapX) {
+							moveX = (playerAABB.max.x - blockAABB.min.x < blockAABB.max.x - playerAABB.min.x) ? -overlapInfo.overlapX : overlapInfo.overlapX;
+						} else
+						if (minOverlap == overlapInfo.overlapY) {
+							moveY = (playerAABB.max.y - blockAABB.min.y < blockAABB.max.y - playerAABB.min.y) ? -overlapInfo.overlapY : overlapInfo.overlapY;
+						}
+					}
+					*/
+
+					//truncation method
+					overlapInfoTruncation overlapInfoTruncation = overlapAABBtruncation(playerAABB, blockAABB);
+					if (!overlapInfoTruncation.isOverlapping) continue;
+
+					if (xOverlap != overlapInfoTruncation::DimensionOverlap::none) {
+						if (overlapInfoTruncation.overlapX == overlapInfoTruncation::DimensionOverlap::positive) {
+							if (xOverlap == overlapInfoTruncation::DimensionOverlap::negative) {
+								xOverlap = overlapInfoTruncation::DimensionOverlap::none;
+							}
+							else {
+								xOverlap = overlapInfoTruncation::DimensionOverlap::positive;
+							}
 						}
 						else {
-							if (minOverlap == overlapInfo.overlapX) {
-								moveX = (playerAABB.max.x - blockAABB.min.x < blockAABB.max.x - playerAABB.min.x) ? -overlapInfo.overlapX : overlapInfo.overlapX;
+							if (xOverlap == overlapInfoTruncation::DimensionOverlap::positive) {
+								xOverlap = overlapInfoTruncation::DimensionOverlap::none;
 							}
-							else if (minOverlap == overlapInfo.overlapY) {
-								moveY = (playerAABB.max.y - blockAABB.min.y < blockAABB.max.y - playerAABB.min.y) ? -overlapInfo.overlapY : overlapInfo.overlapY;
+							else {
+								xOverlap = overlapInfoTruncation::DimensionOverlap::negative;
+							}
+						}
+					}
+
+					if (yOverlap != overlapInfoTruncation::DimensionOverlap::none) {
+						if (overlapInfoTruncation.overlapY == overlapInfoTruncation::DimensionOverlap::positive) {
+							if (yOverlap == overlapInfoTruncation::DimensionOverlap::negative) {
+								yOverlap = overlapInfoTruncation::DimensionOverlap::none;
+							}
+							else {
+								yOverlap = overlapInfoTruncation::DimensionOverlap::positive;
+							}
+						}
+						else {
+							if (yOverlap == overlapInfoTruncation::DimensionOverlap::positive) {
+								yOverlap = overlapInfoTruncation::DimensionOverlap::none;
+							}
+							else {
+								yOverlap = overlapInfoTruncation::DimensionOverlap::negative;
+							}
+						}
+					}
+
+					if (zOverlap != overlapInfoTruncation::DimensionOverlap::none) {
+						if (overlapInfoTruncation.overlapZ == overlapInfoTruncation::DimensionOverlap::positive) {
+							if (zOverlap == overlapInfoTruncation::DimensionOverlap::negative) {
+								zOverlap = overlapInfoTruncation::DimensionOverlap::none;
+							}
+							else {
+								zOverlap = overlapInfoTruncation::DimensionOverlap::positive;
+							}
+						}
+						else {
+							if (zOverlap == overlapInfoTruncation::DimensionOverlap::positive) {
+								zOverlap = overlapInfoTruncation::DimensionOverlap::none;
+							}
+							else {
+								zOverlap = overlapInfoTruncation::DimensionOverlap::negative;
 							}
 						}
 					}
@@ -91,46 +174,95 @@ void world::AABBcolisionDetection() {
 		}
 	}
 
+	float moveX = 0.0, moveY = 0.0, moveZ = 0.0;
+
+	if (xOverlap == overlapInfoTruncation::DimensionOverlap::positive) {
+		moveX = ceil(playerPosition.x) - playerPosition.x - playerWidthHalf;
+	} else if (xOverlap == overlapInfoTruncation::DimensionOverlap::negative) {
+		moveX = floor(playerPosition.x) - playerPosition.x + playerWidthHalf;
+	}
+
+	if (yOverlap == overlapInfoTruncation::DimensionOverlap::positive) {
+		moveY = ceil(playerPosition.y) - playerPosition.y - playerWidthHalf;
+	}
+	else if (yOverlap == overlapInfoTruncation::DimensionOverlap::negative) {
+		moveY = floor(playerPosition.y) - playerPosition.y + playerWidthHalf;
+	}
+
+	if (zOverlap == overlapInfoTruncation::DimensionOverlap::positive) {
+		moveZ = ceil(playerPosition.z) - playerPosition.z;
+	}
+	else if (zOverlap == overlapInfoTruncation::DimensionOverlap::negative) {
+		moveZ = floor(playerPosition.z) - playerPosition.z;
+	}
+
 	onTheFloor = (moveZ) ? true : false;
 
-	//openGL inne osie kamery
-	move = glm::vec3(moveX, moveZ, moveY);
+	//openGL has different camera axis coordinates
+	glm::vec3 move = glm::vec3(moveX, moveZ, moveY);
 	cam.moveCamera(move);
+
+	//auto t2 = std::chrono::high_resolution_clock::now();
+	//auto duration = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
+	//std::cout << duration << std::endl;
 }
 
 void world::createChunks() {
+	auto t1 = std::chrono::high_resolution_clock::now();
 	glm::vec2 playerChunk = playerOne.getPlayerChunk();
 	playerChunkX = playerChunk.x;
 	playerChunkY = playerChunk.y;
+	if (playerChunkX == lastPlayerChunkX && playerChunkY == lastPlayerChunkY) return;
+	lastPlayerChunkX = playerChunkX;
+	lastPlayerChunkY = playerChunkY;
 
 	std::unordered_set<std::pair<int, int>, pairHash> requiredChunks;
-	//nie usuwamy chunkow 1+render gdy gracz porusza sie na przemian granic czunkow
+	//tolerance chunks to reduce loading when player moves across chunk borders
 	std::unordered_set<std::pair<int, int>, pairHash> toleranceChunks;
 
+	//determine the circle of chunks
 	for (int dx = 0; dx <= RENDER_DISTANCE_CHUNKS; ++dx) {
 		for (int dy = 0; dy <= RENDER_DISTANCE_CHUNKS; ++dy) {
 			if (dx * dx + dy * dy <= RENDER_DISTANCE_CHUNKS * RENDER_DISTANCE_CHUNKS) {
-				requiredChunks.emplace(playerChunkX + dx, playerChunkY + dy);
-				requiredChunks.emplace(playerChunkX - dx, playerChunkY + dy);
-				requiredChunks.emplace(playerChunkX + dx, playerChunkY - dy);
-				requiredChunks.emplace(playerChunkX - dx, playerChunkY - dy);
 
-				toleranceChunks.emplace(playerChunkX + dx, playerChunkY + dy);
-				toleranceChunks.emplace(playerChunkX - dx, playerChunkY + dy);
-				toleranceChunks.emplace(playerChunkX + dx, playerChunkY - dy);
-				toleranceChunks.emplace(playerChunkX - dx, playerChunkY - dy);
-			}
+				if (dx != 0 || dy != 0) {
+					requiredChunks.emplace(playerChunkX + dx, playerChunkY + dy);
+					requiredChunks.emplace(playerChunkX - dx, playerChunkY + dy);
+					requiredChunks.emplace(playerChunkX + dx, playerChunkY - dy);
+					requiredChunks.emplace(playerChunkX - dx, playerChunkY - dy);
 
-			if (dx == RENDER_DISTANCE_CHUNKS || dy == RENDER_DISTANCE_CHUNKS) {
-				if (dx * dx + dy * dy <= (RENDER_DISTANCE_CHUNKS + 1) * (RENDER_DISTANCE_CHUNKS + 1)) {
 					toleranceChunks.emplace(playerChunkX + dx, playerChunkY + dy);
 					toleranceChunks.emplace(playerChunkX - dx, playerChunkY + dy);
 					toleranceChunks.emplace(playerChunkX + dx, playerChunkY - dy);
 					toleranceChunks.emplace(playerChunkX - dx, playerChunkY - dy);
+				} else if (dx != 0 || dy == 0) {
+					requiredChunks.emplace(playerChunkX + dx, playerChunkY);
+					requiredChunks.emplace(playerChunkX - dx, playerChunkY);
+
+					toleranceChunks.emplace(playerChunkX + dx, playerChunkY);
+					toleranceChunks.emplace(playerChunkX - dx, playerChunkY);
+				} else if (dx == 0 || dy != 0) {
+					requiredChunks.emplace(playerChunkX, playerChunkY + dy);
+					requiredChunks.emplace(playerChunkX, playerChunkY - dy);
+
+					toleranceChunks.emplace(playerChunkX, playerChunkY + dy);
+					toleranceChunks.emplace(playerChunkX, playerChunkY - dy);
+				} else if (dx == 0 || dy == 0) {
+					requiredChunks.emplace(playerChunkX, playerChunkY);
+
+					toleranceChunks.emplace(playerChunkX, playerChunkY);
 				}
-			}
+
+			} else if (dx * dx + dy * dy <= (RENDER_DISTANCE_CHUNKS + 1) * (RENDER_DISTANCE_CHUNKS + 1)) {
+				toleranceChunks.emplace(playerChunkX + dx, playerChunkY + dy);
+				toleranceChunks.emplace(playerChunkX - dx, playerChunkY + dy);
+				toleranceChunks.emplace(playerChunkX + dx, playerChunkY - dy);
+				toleranceChunks.emplace(playerChunkX - dx, playerChunkY - dy);
+			}	
 		}
 	}
+
+
 	/*std::vector<std::thread> threads;
 	for (const auto& chunk : requiredChunks) {
 		if (existingChunks.find(chunk) == existingChunks.end()) {
@@ -143,13 +275,14 @@ void world::createChunks() {
 		}
 	}*/
 	
+	
 	for (const auto& chunk : requiredChunks) {
 		if (existingChunks.find(chunk) == existingChunks.end()) {
 			newChunk(chunk.first, chunk.second);
 		}
 	}
 
-	//to jest zbyt skomplikowane ta kopia chyba nie jest potrzebna!!!!!!!!!!!!!!!
+
 	auto tempExistingChunks = existingChunks;
 
 	existingChunks = std::move(requiredChunks);
@@ -170,6 +303,10 @@ void world::createChunks() {
 			existingChunks.emplace(chunk);
 		}
 	}
+
+	auto t2 = std::chrono::high_resolution_clock::now();
+	auto duration = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
+	std::cout << duration << std::endl;
 }
 
 void world::generateChunkMesh(chunk& c) {
@@ -179,17 +316,15 @@ void world::generateChunkMesh(chunk& c) {
 	glm::vec3 blockPosition;
 	uint8_t blockID;
 	bool back = true, front = true, left = true, right = true, bottom = true, top = true;
-	//bool back = false, front = false, left = false, right = false, bottom = false, top = false;
 
-	//duzo danych nadmiarowych, fajnie byloby to wrzucic do jednego float i wydobywac manipluacja bitowa w shaderze
 	for (uint8_t cx = 0; cx < CHUNK_LENGTH; cx++) {
 		for (uint8_t cy = 0; cy < CHUNK_LENGTH; cy++) {
 			for (uint8_t cz = 0; cz < CHUNK_HEIGHT; cz++) {
 				blockID = c.chunkBlockData[get3dCoord(cx, cy, cz)];
-				if (blockID == 255) continue; //powietrze pomijam
+				if (blockID == 255) continue; //skip air
 				blockPosition = glm::vec3(cx, cz, cy);
 
-				//sprawdzanie somsiadow
+				//check neighbours
 				if (cx != 0) if (c.chunkBlockData[get3dCoord(cx - 1, cy, cz)] != 255) {
 					left = false;
 				};
@@ -206,7 +341,7 @@ void world::generateChunkMesh(chunk& c) {
 					bottom = false;
 				};
 				if (cz == 0) {
-					bottom = false; //nie trzeba spodu
+					bottom = false;
 				};
 				if (cz != CHUNK_HEIGHT - 1) if (c.chunkBlockData[get3dCoord(cx, cy, cz + 1)] != 255) {
 					top = false;
@@ -343,38 +478,17 @@ void world::newChunk(int x, int y) {
 	perlinNoiseGenerator(x, y, perlinNoise, OCTAVES, PERSISTANCE);
 	for (uint8_t cx = 0; cx < CHUNK_LENGTH; cx++) {
 		for (uint8_t cy = 0; cy < CHUNK_LENGTH; cy++) {
-			uint8_t height = (uint8_t)(((perlinNoise[get2dCoord(cx, cy)] + 1.5f) * 0.36f) * CHUNK_HEIGHT); //TO TRZEBA ZAKTUALIZOWAC DO GENERACJI Z OKTAWAMI
+			//uint8_t height = (uint8_t)(((perlinNoise[get2dCoord(cx, cy)] + 1.5f) * 0.36f) * CHUNK_HEIGHT); //TO TRZEBA ZAKTUALIZOWAC DO GENERACJI Z OKTAWAMI
 
-			for (uint8_t cz = 0; cz < CHUNK_HEIGHT; ++cz) {
-				if (cz > height) {
-					newChunk->chunkBlockData[get3dCoord(cx, cy, cz)] = 255; // Air
-				}
-				else if (cz == height) {
-					newChunk->chunkBlockData[get3dCoord(cx, cy, cz)] = 0; // Grass
-				}
-				else if (cz == height - 1) {
-					newChunk->chunkBlockData[get3dCoord(cx, cy, cz)] = 1; // Dirt
-				}
-
-				//obecna prostota swiata pozwala na pominiecie wielu blokow
-				else if (cz == height - 2) {
-					newChunk->chunkBlockData[get3dCoord(cx, cy, cz)] = 2;
-				}
-				else if (cz == height - 3) {
-					newChunk->chunkBlockData[get3dCoord(cx, cy, cz)] = 2;
-				}
-				else if (cz == height - 4) {
-					newChunk->chunkBlockData[get3dCoord(cx, cy, cz)] = 2;
-				}
-				else {
-					newChunk->chunkBlockData[get3dCoord(cx, cy, cz)] = 255;
-				}
-				//
-
-				//w przeciwnym razie to:
-				//else {
-				//	newChunk->chunkBlockData[get3dCoord(cx, cy, cz)] = 2; // Stone
-				//}
+			uint8_t height = (cx % 4 || cy % 4) ? 2 : 90;
+			
+			for (uint8_t cz = 0; cz <= height - 2; ++cz) {
+				newChunk->chunkBlockData[get3dCoord(cx, cy, cz)] = 2; //Stone
+			}
+			newChunk->chunkBlockData[get3dCoord(cx, cy, height - 1)] = 1; // Dirt
+			newChunk->chunkBlockData[get3dCoord(cx, cy, height)] = 0; // Grass
+			for (uint8_t cz = height + 1; cz < CHUNK_HEIGHT; ++cz) {
+				newChunk->chunkBlockData[get3dCoord(cx, cy, cz)] = 255; //Air
 			}
 		}
 	}
@@ -385,7 +499,7 @@ void world::newChunk(int x, int y) {
 
 	chunks[{x, y}] = std::move(newChunk);
 
-	//std::cout << "thread ended" << std::endl;
+	std::cout << "thread ended" << std::endl;
 }
 
 void world::deleteChunk(int x, int y) {

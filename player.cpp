@@ -20,8 +20,8 @@ void player::updatePlayerPosition(float pX, float pY, float pZ) {
 
 player::AABB player::getPlayerAABB() const {
 	return {
-		glm::vec3(playerX - 0.5, playerY - 0.5, playerZ - 2),
-		glm::vec3(playerX + 0.5, playerY + 0.5, playerZ)
+		glm::vec3(playerX - PLAYERWIDTH / 2, playerY - PLAYERWIDTH / 2, playerZ - PLAYERHEIGHT),
+		glm::vec3(playerX + PLAYERWIDTH / 2, playerY + PLAYERWIDTH / 2, playerZ)
 	};
 }
 

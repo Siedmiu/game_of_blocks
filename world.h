@@ -30,7 +30,7 @@ private:
 	const unsigned int OCTAVES = 1;
 	const float PERSISTANCE = 0.5f;
 
-	int playerChunkX = 0, playerChunkY = 0;
+	int playerChunkX = 0, playerChunkY = 0, lastPlayerChunkX = 1, lastPlayerChunkY = 1;
 	glm::vec3 playerPosition{};
 
 	const player& playerOne;
@@ -114,10 +114,19 @@ private:
 		float overlapZ;
 	};
 
+	struct overlapInfoTruncation {
+		enum class DimensionOverlap { null, none, positive, negative };
+		bool isOverlapping = true;
+		DimensionOverlap overlapX = DimensionOverlap::null;
+		DimensionOverlap overlapY = DimensionOverlap::null;
+		DimensionOverlap overlapZ = DimensionOverlap::null;
+	};
+
 	std::unordered_map<std::pair<int, int>, std::unique_ptr<chunk>, pairHash> chunks;
 	std::unordered_set<std::pair<int, int>, pairHash> existingChunks;
 
 	overlapInfo overlapAABB(const player::Aabb& playerAABB, const player::Aabb& blockAABB);
+	overlapInfoTruncation overlapAABBtruncation(const player::Aabb& playerAABB, const player::Aabb& blockAABB);
 	void generateChunkMesh(chunk& c);
 	float cubicInterpolator(float a, float b, float weight);
 	float lerp(float a, float b, float weight);
