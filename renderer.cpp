@@ -2,7 +2,7 @@
 #include "shaders.h"
 
 renderer::renderer(unsigned int shaderProgramID, const world& gameWorld)
-    : gameWorld(gameWorld) { //fancy szmancy inicjalizowanie
+    : gameWorld(gameWorld) {
     timeValue = 0.0;
     shaderProgram = shaderProgramID;
     model = glm::mat4(1.0f);

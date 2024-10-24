@@ -37,38 +37,30 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
     cam.updateCamera();
 }
 
-void processInput(GLFWwindow* window, float TIMESTEP, camera& cam) {
+void processInput(GLFWwindow* window, float TIMESTEP, camera& cam, player& player) {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, true);
         //return false;
     } 
 
     const float cameraSpeed = STATIC_SPEED * TIMESTEP;
-    //bool playerMoved = false;
 
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-        cam.moveForward(cameraSpeed);
-        //playerMoved = true;
+        player.accelFRONTwalk(TIMESTEP);
     }
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-        cam.moveBackward(cameraSpeed);
-        //playerMoved = true;
+        player.accelBACK(TIMESTEP);
     }
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-        cam.moveLeft(cameraSpeed);
-        //playerMoved = true;
+        player.accelLEFT(TIMESTEP);
     }
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-        cam.moveRight(cameraSpeed);
-        //playerMoved = true;
+        player.accelRIGHT(TIMESTEP);
     }
     if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
         //cam.moveUp(cameraSpeed);
-        //playerMoved = true;
     }
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
         cam.moveDown(cameraSpeed);
-        //playerMoved = true;
     }
-    //return playerMoved;
 }

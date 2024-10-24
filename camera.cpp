@@ -34,22 +34,6 @@ void camera::moveDown(float speed) {
     cameraPos -= speed * cameraUp;
 }
 
-void camera::moveForward(float speed) {
-    cameraPos += speed * glm::normalize(glm::vec3(cameraFront.x, 0.0f, cameraFront.z));
-}
-
-void camera::moveBackward(float speed) {
-    cameraPos -= speed * glm::normalize(glm::vec3(cameraFront.x, 0.0f, cameraFront.z));
-}
-
-void camera::moveLeft(float speed) {
-    cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * speed;
-}
-
-void camera::moveRight(float speed) {
-    cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * speed;
-}
-
 glm::vec2 camera::getXY() const {
     return glm::vec2(cameraPos.x, cameraPos.z);
 }

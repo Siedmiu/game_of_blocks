@@ -23,10 +23,6 @@ public:
     void updateCamera();
     void moveUp(float speed);
     void moveDown(float speed);
-    void moveForward(float speed);
-    void moveBackward(float speed);
-    void moveLeft(float speed);
-    void moveRight(float speed);
 
     glm::vec2 getXY() const;
     glm::vec3 getXYZ() const;

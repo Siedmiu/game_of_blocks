@@ -15,7 +15,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-//CHUNK SETTINGS
+//CHUNK SETTINGS (in player.h as well?)
 const unsigned short int CHUNK_HEIGHT = 100, CHUNK_LENGTH = 16;
 const float CHUNK_LENGTH_RECIPROCAL = 1.0f / CHUNK_LENGTH;
 

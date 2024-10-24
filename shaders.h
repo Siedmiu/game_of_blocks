@@ -41,15 +41,7 @@ private:
 
 		"void main()\n"
 		"{\n"
-		"    if (TexID == 0.0) {\n"
-		"        FragColor = texture(texturesArray[0], TexCoord);\n"
-		"    } else if (TexID == 1.0) {\n"
-		"        FragColor = texture(texturesArray[1], TexCoord);\n"
-		"    } else if (TexID == 2.0) {\n"
-		"        FragColor = texture(texturesArray[1], TexCoord);\n"
-		"    } else {\n"
-		"        FragColor = texture(texturesArray[1], TexCoord);\n" //na wypadek bledu konwersji TexID
-		"    }\n"
+		"	FragColor = texture(texturesArray[int(TexID)], TexCoord);\n"
 		"}\n\0";
 
 	unsigned int vertexShader, fragmentShader, shaderProgram;

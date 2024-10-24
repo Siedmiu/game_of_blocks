@@ -42,9 +42,10 @@ void world::AABBcolisionDetection() {
 	player::Aabb playerAABB = playerOne.getPlayerAABB();
 	player::Aabb blockAABB{};
 	playerPosition = playerOne.getPlayerPosition();
-	glm::vec2 playerChunk = playerOne.getPlayerChunk();
 	const float checkRadius = 0.5f, PLAYERHEIGHT = player::PLAYERHEIGHT, playerWidthHalf = player::PLAYERWIDTH * 0.5f;
 	int blockX, blockY, blockChunkX, blockChunkY;
+	blockChunkX = playerPosition.x * CHUNK_LENGTH_RECIPROCAL;
+	blockChunkY = playerPosition.y * CHUNK_LENGTH_RECIPROCAL;
 	overlapInfoTruncation::DimensionOverlap xOverlap{}, yOverlap{}, zOverlap{};
 
 	for (int x = (int)(playerPosition.x - checkRadius - playerWidthHalf); x <= (int)(playerPosition.x + checkRadius + playerWidthHalf); x++) {
@@ -52,10 +53,6 @@ void world::AABBcolisionDetection() {
 			for (int z = (int)(playerPosition.z - checkRadius - PLAYERHEIGHT); z <= (ceil)(playerPosition.z + checkRadius); z++) {
 				if (z < 0 || z >= CHUNK_HEIGHT) continue;
 				//if (xOverlap == overlapInfoTruncation::DimensionOverlap::none || yOverlap == overlapInfoTruncation::DimensionOverlap::none || zOverlap == overlapInfoTruncation::DimensionOverlap::none) break;
-
-				blockChunkX = playerChunk.x;
-				blockChunkY = playerChunk.y;
-
 				blockX = x - blockChunkX * CHUNK_LENGTH;
 				blockY = y - blockChunkY * CHUNK_LENGTH;
 
@@ -209,9 +206,9 @@ void world::AABBcolisionDetection() {
 
 void world::createChunks() {
 	auto t1 = std::chrono::high_resolution_clock::now();
-	glm::vec2 playerChunk = playerOne.getPlayerChunk();
-	playerChunkX = playerChunk.x;
-	playerChunkY = playerChunk.y;
+	playerPosition = playerOne.getPlayerPosition();
+	playerChunkX = playerPosition.x * CHUNK_LENGTH_RECIPROCAL;
+	playerChunkY = playerPosition.y * CHUNK_LENGTH_RECIPROCAL;
 	if (playerChunkX == lastPlayerChunkX && playerChunkY == lastPlayerChunkY) return;
 	lastPlayerChunkX = playerChunkX;
 	lastPlayerChunkY = playerChunkY;
@@ -499,7 +496,7 @@ void world::newChunk(int x, int y) {
 
 	chunks[{x, y}] = std::move(newChunk);
 
-	std::cout << "thread ended" << std::endl;
+	//std::cout << "thread ended" << std::endl;
 }
 
 void world::deleteChunk(int x, int y) {

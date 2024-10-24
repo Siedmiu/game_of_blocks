@@ -5,7 +5,6 @@
 //do zrobienia
 // naprawic tekstury
 // kolizja i chodzenie
-// audio
 // 
 // moze:
 // naprawic oktawy
@@ -31,6 +30,7 @@
 #include "stb_image.h"
 #include "world.h"
 #include "player.h"
+#include "texture_loader.h"
 
 #include <iostream>
 //#include <thread>
@@ -38,10 +38,7 @@
 const float SCR_WIDTH = 1920; //1280
 const float SCR_HEIGHT = 1080; //720
 const float FOV = 70.0f;
-const float FPS = 60.0f; //nie wplywa na szybkosc symulacji
-const float TIMESTEP = 1.0f / FPS;
-
-const unsigned int NUMBER_OF_TEXTURES = 3;
+const float TIMESTEP = 1.0f / 60.0f;
 
 /*bool running = true;
 void chunkGenerationThread(world& world) {
@@ -83,7 +80,6 @@ int main() {
     }
 
     //OPENGL------------------------------------------------------------------------
-
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
     glEnable(GL_MULTISAMPLE);
@@ -96,67 +92,20 @@ int main() {
     unsigned int shaderProgram;
     shaderProgram = shaders.shaderProgramID();
 
-    //tekstury     //co to tu robi trzeba to wywalic do innego pliku bo balagan jest
-    unsigned int textures[NUMBER_OF_TEXTURES];
-    glGenTextures(NUMBER_OF_TEXTURES, textures);
+    //tekstury
+    TextureLoader textureLoader;
+    std::vector<std::string> textureFiles = {
+        "grass_block_top.png",
+        "dirt.png",
+        "stone.png"
+    };
 
-    //0
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, textures[0]);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-    int width, height, nrChannels;
-    stbi_set_flip_vertically_on_load(true);
-    unsigned char* data = stbi_load("grass_block_top.png", &width, &height, &nrChannels, 0);
-    if (data) {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-        glGenerateMipmap(GL_TEXTURE_2D);
-    }
-    else {
-        std::cout << "Failed to load texture 0" << std::endl;
-    }
-    stbi_image_free(data);
-
-    //1
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, textures[1]);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-    data = stbi_load("dirt.png", &width, &height, &nrChannels, 0);
-    if (data) {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-        glGenerateMipmap(GL_TEXTURE_2D);
-    }
-    else {
-        std::cout << "Failed to load texture 1" << std::endl;
-    }
-    stbi_image_free(data);
-
-    //2
-    glActiveTexture(GL_TEXTURE2);
-    glBindTexture(GL_TEXTURE_2D, textures[2]);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-    data = stbi_load("stone.png", &width, &height, &nrChannels, 0);
-    if (data) {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-        glGenerateMipmap(GL_TEXTURE_2D);
-    }
-    else {
-        std::cout << "Failed to load texture 2" << std::endl;
-    }
-    stbi_image_free(data);
+    std::vector<unsigned int> textures = textureLoader.loadTextures(textureFiles);
 
     shaders.use();
-    shaders.setInt("texturesArray[0]", 0);
-    shaders.setInt("texturesArray[1]", 1);
-    shaders.setInt("texturesArray[2]", 2);
+    for (size_t i = 0; i < textures.size(); i++) {
+        shaders.setInt("texturesArray[" + std::to_string(i) + "]", i);
+    }
 
     //std::cout << glGetUniformLocation(shaderProgram, "texturesArray[2]") << std::endl;
 
@@ -180,7 +129,7 @@ int main() {
     //projekcja prespektywa
     glm::mat4 projection = glm::mat4(1.0f);
     projection = glm::perspective(glm::radians(FOV), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 1000.0f);
-    //projection = glm::ortho(0.0f, 100.0f, 0.0f, 100.0f, 0.1f, 1000.0f);
+    //projection = glm::ortho(0.0f, 10.0f, 0.0f, 10.0f, 0.1f, 1000.0f);
 
     unsigned int modelLoc = glGetUniformLocation(shaderProgram, "model");
     unsigned int viewLoc = glGetUniformLocation(shaderProgram, "view");
@@ -193,7 +142,7 @@ int main() {
 
     //player
     glm::vec3 playerXYZ = glm::vec3(0.0f, 0.0f, 0.0f);
-    player player;
+    player player(cam);
 
     //inicjalizacja swiata
     world world(player, cam);
@@ -208,17 +157,17 @@ int main() {
     float newTime = (float)glfwGetTime();
     float frameTime = newTime - currentTime;
 
-    view = glm::lookAt(glm::vec3(0.0f, 0.0f, 3.0f),         // [ rx ry rz 0 ]
-        glm::vec3(0.0f, 0.0f, 0.0f),         // [ ux uy uz 0 ]
-        glm::vec3(0.0f, 1.0f, 0.0f));        // [ dx dy dz 0 ]
-    // [ 0  0  0  1 ]
-//initial positon
-    playerXYZ = cam.getXYZ();
-    player.updatePlayerPosition(playerXYZ.x, playerXYZ.y, playerXYZ.z);
+    view = glm::lookAt(glm::vec3(0.0f, 0.0f, 3.0f), // [ rx ry rz 0 ]
+                       glm::vec3(0.0f, 0.0f, 0.0f), // [ ux uy uz 0 ]
+                       glm::vec3(0.0f, 1.0f, 0.0f));// [ dx dy dz 0 ]
+                                                    // [ 0  0  0  1 ]
 
-    //G R A W I T A C J A
-    const float GRAVITY = 9.81f * 3, JUMP_SPEED = -10.0f;
-    float fallingVelocity = 0.0f;
+    //initial positon
+    playerXYZ = cam.getXYZ();
+    player.updatePlayerPosition(0.0f, 3.0f, 100.0f);
+
+    //gravity move to velocity
+    const float GRAVITATIONAL_CONSTANT = 9.81f;
 
     //game loop
     while (!glfwWindowShouldClose(window)) {
@@ -238,8 +187,9 @@ int main() {
         //transformacje i time step
         while (timeAccumulator >= TIMESTEP) {
             //movement
-            processInput(window, TIMESTEP, cam);
+            processInput(window, TIMESTEP, cam, player);
 
+            /*
             //Gravity
             if (!world.onTheFloor) {
                 fallingVelocity += GRAVITY * TIMESTEP;
@@ -250,11 +200,14 @@ int main() {
             }
             else {
                 fallingVelocity = 0.0f;
-            }
+            }*/
 
-            //AABB Colision detection only if player moves
-            playerXYZ = cam.getXYZ();
-            player.updatePlayerPosition(playerXYZ.x, playerXYZ.y, playerXYZ.z);
+            //handle velocity
+            player.movePlayer(TIMESTEP);
+
+            //Colision detection 
+            //playerXYZ = cam.getXYZ();
+            //player.updatePlayerPosition(playerXYZ.x, playerXYZ.y, playerXYZ.z);
             world.AABBcolisionDetection();
 
             glm::mat4 view = cam.getViewMatrix();
