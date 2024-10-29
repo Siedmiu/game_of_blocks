@@ -19,6 +19,7 @@ public:
         return instance;
     }
 
+    void temporarySetCamera(glm::vec3 set);
     void moveCamera(glm::vec3 move);
     void updateCamera();
     void moveUp(float speed);
@@ -36,7 +37,15 @@ public:
         return cameraFront;
     }
 
+    glm::vec3 getCameraFrontXYZ() const {
+        return glm::vec3(cameraFront.x, cameraFront.z, cameraFront.y);
+    }
+
     glm::vec3 getCameraUp() const {
         return cameraUp;
+    }
+
+    glm::vec3 getCameraUpXYZ() const {
+        return glm::vec3(cameraUp.x, cameraUp.z, cameraUp.y);
     }
 };

@@ -37,13 +37,13 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
     cam.updateCamera();
 }
 
-void processInput(GLFWwindow* window, float TIMESTEP, camera& cam, player& player) {
+void processInput(GLFWwindow* window, float TIMESTEP, player& player) {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, true);
         //return false;
     } 
 
-    const float cameraSpeed = STATIC_SPEED * TIMESTEP;
+    //const float cameraSpeed = STATIC_SPEED * TIMESTEP;
 
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
         player.accelFRONTwalk(TIMESTEP);
@@ -61,6 +61,6 @@ void processInput(GLFWwindow* window, float TIMESTEP, camera& cam, player& playe
         //cam.moveUp(cameraSpeed);
     }
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
-        cam.moveDown(cameraSpeed);
+        //cam.moveDown(cameraSpeed);
     }
 }

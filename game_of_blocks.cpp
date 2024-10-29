@@ -5,6 +5,8 @@
 //do zrobienia
 // naprawic tekstury
 // kolizja i chodzenie
+// z pre pass
+// Shaders
 // 
 // moze:
 // naprawic oktawy
@@ -141,7 +143,6 @@ int main() {
     //-------------------------------------------------------------------//
 
     //player
-    glm::vec3 playerXYZ = glm::vec3(0.0f, 0.0f, 0.0f);
     player player(cam);
 
     //inicjalizacja swiata
@@ -163,11 +164,10 @@ int main() {
                                                     // [ 0  0  0  1 ]
 
     //initial positon
-    playerXYZ = cam.getXYZ();
-    player.updatePlayerPosition(0.0f, 3.0f, 100.0f);
+    player.updatePlayerPositionVector(cam.getXYZ());
 
     //gravity move to velocity
-    const float GRAVITATIONAL_CONSTANT = 9.81f;
+    //const float GRAVITATIONAL_CONSTANT = 9.81f;
 
     //game loop
     while (!glfwWindowShouldClose(window)) {
@@ -186,8 +186,8 @@ int main() {
 
         //transformacje i time step
         while (timeAccumulator >= TIMESTEP) {
-            //movement
-            processInput(window, TIMESTEP, cam, player);
+            //movement input
+            processInput(window, TIMESTEP, player);
 
             /*
             //Gravity
@@ -205,10 +205,8 @@ int main() {
             //handle velocity
             player.movePlayer(TIMESTEP);
 
-            //Colision detection 
-            //playerXYZ = cam.getXYZ();
-            //player.updatePlayerPosition(playerXYZ.x, playerXYZ.y, playerXYZ.z);
-            world.AABBcolisionDetection();
+            //Colision detection
+            //world.AABBcolisionDetection();
 
             glm::mat4 view = cam.getViewMatrix();
             shaders.setMat4("view", view);

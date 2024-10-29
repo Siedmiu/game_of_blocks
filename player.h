@@ -10,13 +10,13 @@
 
 class player {
 private:
-    const float WALKING_ACCELERATION = 1, SPRINTING_ACCELERATION = 2, AIR_RESISTANCE = 0.5, FLOOR_FRICTION = 0.5;
+    const float WALKING_ACCELERATION = 20, SPRINTING_ACCELERATION = 40, AIR_RESISTANCE = 10, FLOOR_FRICTION = 10;
     const float MAX_WALKING_SPEED = 4.3, MAX_SPRINT_SPEED = 7.1;
     const float JUMP_SPEED = 10;
 
     float playerX, playerY, playerZ;
     glm::vec3 playerVelocity;
-    glm::vec3 cameraFront, cameraUp;
+    glm::vec3 cameraFrontXYZ, cameraUpXYZ, forward;
     int playerChunkX, playerChunkY;
 
     struct AABB {
@@ -44,9 +44,8 @@ public:
 
     void movePlayer(float time);
 
-    void updateCameraFront();
-    void updateCameraUp();
     void updatePlayerPosition(float pX, float pY, float pZ);
+    void updatePlayerPositionVector(glm::vec3 pos);
     void updatePlayerVelocity(float vX, float vY, float vZ);
     AABB getPlayerAABB() const;
     //glm::vec2 getPlayerChunk() const;

@@ -15,6 +15,10 @@ camera::camera() {
     direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
 }
 
+void camera::temporarySetCamera(glm::vec3 set) {
+    cameraPos = set;
+}
+
 void camera::moveCamera(glm::vec3 move) {
     cameraPos += move;
 }

@@ -1,6 +1,6 @@
 #include "player.h"
 
-player::player(camera& cam) : cam(cam), cameraFront(glm::vec3(0.0f, 0.0f, -1.0f)), cameraUp(glm::vec3(0.0f, 1.0f, 0.0f)) {
+player::player(camera& cam) : cam(cam), forward(glm::vec3(0.0f, 0.0f, 0.0f)), cameraFrontXYZ(glm::vec3(0.0f, -1.0f, 0.0f)), cameraUpXYZ(glm::vec3(0.0f, 0.0f, 1.0f)) {
     playerX = 0;
 	playerY = 0;
 	playerZ = 0;
@@ -10,8 +10,6 @@ player::player(camera& cam) : cam(cam), cameraFront(glm::vec3(0.0f, 0.0f, -1.0f)
 }
 
 void player::accelFRONTwalk(float time) {
-    glm::vec3 forward = glm::normalize(glm::vec3(cameraFront.x, 0.0f, cameraFront.z));
-
     float currentSpeed = glm::dot(playerVelocity, forward);
 
     if (currentSpeed < MAX_WALKING_SPEED) {
@@ -25,7 +23,6 @@ void player::accelFRONTwalk(float time) {
 }
 
 void player::accelFRONTsprint(float time) {
-    glm::vec3 forward = glm::normalize(glm::vec3(cameraFront.x, 0.0f, cameraFront.z));
     float currentSpeed = glm::dot(playerVelocity, forward);
 
     if (currentSpeed < MAX_SPRINT_SPEED) {
@@ -39,11 +36,10 @@ void player::accelFRONTsprint(float time) {
 }
 
 void player::accelBACK(float time) {
-    glm::vec3 backward = -glm::normalize(glm::vec3(cameraFront.x, 0.0f, cameraFront.z));
-    float currentSpeed = glm::dot(playerVelocity, backward);
+    float currentSpeed = glm::dot(playerVelocity, -forward);
 
     if (currentSpeed < MAX_WALKING_SPEED) {
-        playerVelocity += backward * WALKING_ACCELERATION * time;
+        playerVelocity += -forward * WALKING_ACCELERATION * time;
 
         float newSpeed = glm::length(playerVelocity);
         if (newSpeed > MAX_WALKING_SPEED) {
@@ -53,7 +49,7 @@ void player::accelBACK(float time) {
 }
 
 void player::accelLEFT(float time) {
-    glm::vec3 left = -glm::normalize(glm::cross(cameraFront, cameraUp));
+    glm::vec3 left = glm::normalize(glm::cross(cameraFrontXYZ, cameraUpXYZ));
     float currentSpeed = glm::dot(playerVelocity, left);
 
     if (currentSpeed < MAX_WALKING_SPEED) {
@@ -67,7 +63,7 @@ void player::accelLEFT(float time) {
 }
 
 void player::accelRIGHT(float time) {
-    glm::vec3 right = glm::normalize(glm::cross(cameraFront, cameraUp));
+    glm::vec3 right = -glm::normalize(glm::cross(cameraFrontXYZ, cameraUpXYZ));
     float currentSpeed = glm::dot(playerVelocity, right);
 
     if (currentSpeed < MAX_WALKING_SPEED) {
@@ -100,20 +96,28 @@ void player::movePlayer(float time) {
     playerZ += playerVelocity.z * time;
 
     decelerate(time);
-}
 
-void player::updateCameraFront() {
-    cameraFront = cam.getCameraFront();
-}
+    //openGL has different camera axis coordinates (later in AABB)
 
-void player::updateCameraUp() {
-    cameraUp = cam.getCameraUp();
+    //update forward
+    cameraFrontXYZ = cam.getCameraFrontXYZ();
+    cameraUpXYZ = cam.getCameraUpXYZ();
+    forward = glm::normalize(glm::vec3(cameraFrontXYZ.x, cameraFrontXYZ.y, 0.0f));
+
+    //move camera (temp set)
+    cam.temporarySetCamera(glm::vec3(playerX,playerZ,playerY));
 }
 
 void player::updatePlayerPosition(float pX, float pY, float pZ) {
 	playerX = pX;
 	playerY = pY;
 	playerZ = pZ;
+}
+
+void player::updatePlayerPositionVector(glm::vec3 pos) {
+    playerX = pos.x;
+    playerY = pos.y;
+    playerZ = pos.z;
 }
 
 void player::updatePlayerVelocity(float vX, float vY, float vZ) {
