@@ -33,6 +33,7 @@
 #include "world.h"
 #include "player.h"
 #include "texture_loader.h"
+#include "errorReporting.h"
 
 #include <iostream>
 //#include <thread>
@@ -53,10 +54,11 @@ void chunkGenerationThread(world& world) {
 int main() {
     //glfw inicjalizacja
     glfwInit();
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_SAMPLES, 4);
+    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
 
     //tworzenie glfw window instance
     GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "kloce", NULL, NULL);
@@ -87,6 +89,8 @@ int main() {
     glEnable(GL_MULTISAMPLE);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    enableReportGlErrors();
 
     //kompilacja shaderow
     shaders shaders;
@@ -202,7 +206,7 @@ int main() {
                 fallingVelocity = 0.0f;
             }*/
 
-            //handle velocity
+            //handle velocity, air resistance, friction and gravity
             player.movePlayer(TIMESTEP);
 
             //Colision detection

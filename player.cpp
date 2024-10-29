@@ -95,9 +95,10 @@ void player::movePlayer(float time) {
     playerY += playerVelocity.y * time;
     playerZ += playerVelocity.z * time;
 
+    //air resistance and gravity
     decelerate(time);
 
-    //openGL has different camera axis coordinates (later in AABB)
+
 
     //update forward
     cameraFrontXYZ = cam.getCameraFrontXYZ();
