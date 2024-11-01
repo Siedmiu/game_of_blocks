@@ -46,6 +46,7 @@ void processInput(GLFWwindow* window, float TIMESTEP, player& player) {
     //const float cameraSpeed = STATIC_SPEED * TIMESTEP;
 
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+        if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) { player.accelFRONTsprint(TIMESTEP); } else
         player.accelFRONTwalk(TIMESTEP);
     }
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
@@ -58,9 +59,12 @@ void processInput(GLFWwindow* window, float TIMESTEP, player& player) {
         player.accelRIGHT(TIMESTEP);
     }
     if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
-        //cam.moveUp(cameraSpeed);
+        //jump
     }
-    if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
-        //cam.moveDown(cameraSpeed);
+    if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS) {
+        player.accelFlyUP(TIMESTEP);
+    }
+    if (glfwGetKey(window, GLFW_KEY_K) == GLFW_PRESS) {
+        player.accelFlyDOWN(TIMESTEP);
     }
 }

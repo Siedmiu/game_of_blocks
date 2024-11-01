@@ -9,6 +9,7 @@ player::player(camera& cam) : cam(cam), forward(glm::vec3(0.0f, 0.0f, 0.0f)), ca
 	playerChunkY = 0;
 }
 
+//this shouldnt be affected by falling
 void player::accelFRONTwalk(float time) {
     float currentSpeed = glm::dot(playerVelocity, forward);
 
@@ -76,6 +77,37 @@ void player::accelRIGHT(float time) {
     }
 }
 
+//ADD FLY ABLE STATE
+void player::accelFlyUP(float time) {
+    glm::vec3 up = cameraUpXYZ;
+
+    float currentSpeed = glm::dot(playerVelocity, up);
+
+    if (currentSpeed < MAX_WALKING_SPEED) {
+        playerVelocity += up * WALKING_ACCELERATION * time;
+
+        float newSpeed = glm::length(playerVelocity);
+        if (newSpeed > MAX_WALKING_SPEED) {
+            playerVelocity = glm::normalize(playerVelocity) * MAX_WALKING_SPEED;
+        }
+    }
+}
+
+void player::accelFlyDOWN(float time) {
+    glm::vec3 up = cameraUpXYZ;
+    float currentSpeed = glm::dot(playerVelocity, -up);
+
+    if (currentSpeed < MAX_WALKING_SPEED) {
+        playerVelocity += -up * WALKING_ACCELERATION * time;
+
+        float newSpeed = glm::length(playerVelocity);
+        if (newSpeed > MAX_WALKING_SPEED) {
+            playerVelocity = glm::normalize(playerVelocity) * MAX_WALKING_SPEED;
+        }
+    }
+}
+
+
 void player::decelerate(float time) {
     //AIR AND FLOOR
     float speed = glm::length(playerVelocity);
@@ -91,6 +123,7 @@ void player::decelerate(float time) {
 }
 
 void player::movePlayer(float time) {
+    //move with collision check instead
     playerX += playerVelocity.x * time;
     playerY += playerVelocity.y * time;
     playerZ += playerVelocity.z * time;
@@ -130,6 +163,39 @@ player::AABB player::getPlayerAABB() const {
 		glm::vec3(playerX - PLAYERWIDTH / 2, playerY - PLAYERWIDTH / 2, playerZ - PLAYERHEIGHT),
 		glm::vec3(playerX + PLAYERWIDTH / 2, playerY + PLAYERWIDTH / 2, playerZ)
 	};
+}
+
+player::AABB player::getPlayerBroadAABB() const {
+    AABB broadAABB{};
+
+    //player AABB in brackets ()
+    if (playerVelocity.x > 0) {
+        broadAABB.min.x = (playerX - PLAYERWIDTH / 2);
+        broadAABB.max.x = (playerX + PLAYERWIDTH / 2) + playerVelocity.x;
+    }
+    else {
+        broadAABB.min.x = (playerX - PLAYERWIDTH / 2) + playerVelocity.x;
+        broadAABB.max.x = (playerX + PLAYERWIDTH / 2);
+    };
+
+    if (playerVelocity.y > 0) {
+        broadAABB.min.y = (playerY - PLAYERWIDTH / 2);
+        broadAABB.max.y = (playerY + PLAYERWIDTH / 2) + playerVelocity.y;
+    }
+    else {
+        broadAABB.min.y = (playerY - PLAYERWIDTH / 2) + playerVelocity.y;
+        broadAABB.max.y = (playerY + PLAYERWIDTH / 2);
+    };
+
+    if (playerVelocity.z > 0) {
+        broadAABB.min.z = (playerZ - PLAYERHEIGHT);
+        broadAABB.max.z = (playerZ) + playerVelocity.z;
+    } else {
+        broadAABB.min.z = (playerZ - PLAYERHEIGHT) + playerVelocity.z;
+        broadAABB.max.z = (playerZ);
+    };
+
+    return broadAABB;
 }
 
 /*

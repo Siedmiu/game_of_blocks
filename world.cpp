@@ -1,10 +1,12 @@
 #include "world.h"
 #include <iostream>
 #include <chrono>
-#include <thread>
+//#include <thread>
 
-world::world(const player& playerOne, camera& cam) : playerOne(playerOne), cam(cam) {}
+world::world(player& playerOne, camera& cam) : playerOne(playerOne), cam(cam) {}
 
+//old AABB
+/*
 world::overlapInfoTruncation world::overlapAABBtruncation(const player::Aabb& playerAABB, const player::Aabb& blockAABB) {
     overlapInfoTruncation info;
 
@@ -38,7 +40,6 @@ world::overlapInfo world::overlapAABB(const player::Aabb& playerAABB, const play
 }
 
 void world::AABBcolisionDetection() {
-	//auto t1 = std::chrono::high_resolution_clock::now();
 	player::Aabb playerAABB = playerOne.getPlayerAABB();
 	player::Aabb blockAABB{};
 	playerPosition = playerOne.getPlayerPosition();
@@ -87,7 +88,7 @@ void world::AABBcolisionDetection() {
 					blockAABB.max.z = z + 1.0f;
 
 					//coordinates method
-					/*
+					///*
 					overlapInfo overlapInfo = overlapAABB(playerAABB, blockAABB);
 
 					if (overlapInfo.isOverlapping) {
@@ -104,7 +105,7 @@ void world::AABBcolisionDetection() {
 							moveY = (playerAABB.max.y - blockAABB.min.y < blockAABB.max.y - playerAABB.min.y) ? -overlapInfo.overlapY : overlapInfo.overlapY;
 						}
 					}
-					*/
+					// /
 
 					//truncation method
 					overlapInfoTruncation overlapInfoTruncation = overlapAABBtruncation(playerAABB, blockAABB);
@@ -199,16 +200,132 @@ void world::AABBcolisionDetection() {
 	glm::vec3 move = glm::vec3(moveX, moveZ, moveY);
 	cam.moveCamera(move);
 
-	//auto t2 = std::chrono::high_resolution_clock::now();
-	//auto duration = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
-	//std::cout << duration << std::endl;
+}
+*/
+
+void world::updatePlayerPosition() {
+	playerPosition = playerOne.getPlayerPosition();
+	playerVelocity = playerOne.getPlayerVelocity();
+	playerChunkX = playerPosition.x * CHUNK_LENGTH_RECIPROCAL;
+	playerChunkY = playerPosition.y * CHUNK_LENGTH_RECIPROCAL;
+}
+
+world::overlapInfo world::sweptAABBcolisonCheckInfo(int x, int y, int z) const {
+
+	world::overlapInfo overlapInfo;
+
+	player::Aabb blockAABB{};
+	blockAABB.min.x = x - playerOne.PLAYERWIDTH * 0.5;
+	blockAABB.min.y = y - playerOne.PLAYERWIDTH * 0.5;
+	blockAABB.min.z = z - playerOne.PLAYERHEIGHT * 0.5;
+	blockAABB.max.x = x + BLOCK_SIZE + playerOne.PLAYERWIDTH * 0.5;
+	blockAABB.max.y = y + BLOCK_SIZE + playerOne.PLAYERWIDTH * 0.5;
+	blockAABB.max.z = z + BLOCK_SIZE + playerOne.PLAYERHEIGHT * 0.5;
+
+	//determine the colision using playerVelocity and playerPosition
+	float t_min = -FLT_MAX;
+	float t_max = FLT_MAX;
+
+	//maybe faster one w/o division
+
+	if (playerVelocity.x != 0.0f) {
+		float inverseVelocity_x = 1.0f / playerVelocity.x;
+		float t1 = (blockAABB.min.x - playerPosition.x) * inverseVelocity_x;
+		float t2 = (blockAABB.max.x - playerPosition.x) * inverseVelocity_x;
+
+		t_min = std::max(t_min, std::min(t1, t2));
+		t_max = std::min(t_max, std::max(t1, t2));
+	}
+
+	if (playerVelocity.y != 0.0f) {
+		float inverseVelocity_y = 1.0f / playerVelocity.y;
+		float t1 = (blockAABB.min.y - playerPosition.y) * inverseVelocity_y;
+		float t2 = (blockAABB.max.y - playerPosition.y) * inverseVelocity_y;
+
+		t_min = std::max(t_min, std::min(t1, t2));
+		t_max = std::min(t_max, std::max(t1, t2));
+	}
+
+	if (playerVelocity.z != 0.0f) {
+		float inverseVelocity_z = 1.0f / playerVelocity.z;
+		float t1 = (blockAABB.min.z - playerPosition.z) * inverseVelocity_z;
+		float t2 = (blockAABB.max.z - playerPosition.z) * inverseVelocity_z;
+
+		t_min = std::max(t_min, std::min(t1, t2));
+		t_max = std::min(t_max, std::max(t1, t2));
+	}
+
+	if (t_min <= t_max && t_min >= 0.0f) {
+		overlapInfo.isOverlaping = true;
+		overlapInfo.timeToColisoinE_4 = (unsigned short int)(t_min * 10000);
+
+		glm::vec3 overlapDistance{};
+		if (playerVelocity.x > 0.0f)
+			overlapInfo.overlapDistance.x = blockAABB.max.x - playerPosition.x;
+		else if (playerVelocity.x < 0.0f)
+			overlapInfo.overlapDistance.x = blockAABB.min.x - playerPosition.x;
+
+		if (playerVelocity.y > 0.0f)
+			overlapInfo.overlapDistance.y = blockAABB.max.y - playerPosition.y;
+		else if (playerVelocity.y < 0.0f)
+			overlapInfo.overlapDistance.y = blockAABB.min.y - playerPosition.y;
+
+		if (playerVelocity.z > 0.0f)
+			overlapInfo.overlapDistance.z = blockAABB.max.z - playerPosition.z;
+		else if (playerVelocity.z < 0.0f)
+			overlapInfo.overlapDistance.z = blockAABB.min.z - playerPosition.z;
+	}
+	
+	return overlapInfo;
+}
+
+//swept aabb
+// 1. Determine broad phase area:
+//	 - player::getPlayerBroadAABB()
+//	 - check for solid blocks
+// 
+// 2. Sweep:
+//	- add player size to blocks
+//	- determine overlap
+//	- select smallest overlaping axi
+//  - calculate intersection point
+// 
+// 2. Slide response:
+//	- calculate slide response
+//  - 3 sliding passes
+//
+// ? potencial to add deflection (bounce)
+//
+void world::sweptAABBcolisonCheck() {
+	player::Aabb broadAABB = playerOne.getPlayerAABB();
+	world::overlapInfo overlapNearest, overlapTemp;
+	uint8_t blockType = 255;
+	int blockX = 0, blockY = 0, blockChunkX = 0, blockChunkY = 0;
+
+	for (int z = (int)broadAABB.min.z; z <= (int)broadAABB.max.z; z++) {
+		if (z < 0 || z >= CHUNK_HEIGHT) continue;
+
+		for (int y = (int)broadAABB.min.y; y <= (int)broadAABB.max.y; y++) {
+			for (int x = (int)broadAABB.min.x; x <= (int)broadAABB.max.x; x++) {
+				blockType = getBlockWorldspace(x, y, z);
+				if (blockType == 255) continue;
+
+				overlapTemp = sweptAABBcolisonCheckInfo(x, y, z);
+				if (!overlapTemp.isOverlaping) continue;
+
+				if (overlapTemp.timeToColisoinE_4 < overlapNearest.timeToColisoinE_4) overlapNearest = overlapTemp;
+			}
+		}
+	}
+
+	if (!overlapNearest.isOverlaping) return;
+
+	playerOne.updatePlayerVelocity(overlapNearest.overlapDistance.x, overlapNearest.overlapDistance.y, overlapNearest.overlapDistance.z);
 }
 
 void world::createChunks() {
 	auto t1 = std::chrono::high_resolution_clock::now();
-	playerPosition = playerOne.getPlayerPosition();
-	playerChunkX = playerPosition.x * CHUNK_LENGTH_RECIPROCAL;
-	playerChunkY = playerPosition.y * CHUNK_LENGTH_RECIPROCAL;
+
 	if (playerChunkX == lastPlayerChunkX && playerChunkY == lastPlayerChunkY) return;
 	lastPlayerChunkX = playerChunkX;
 	lastPlayerChunkY = playerChunkY;
@@ -306,6 +423,7 @@ void world::createChunks() {
 	std::cout << duration << std::endl;
 }
 
+//nie da sie sprawdzic chunkow obok jak jeszcze nie istnieja, poprawic dla nowego generatora szumu
 void world::generateChunkMesh(chunk& c) {
 	std::vector<float> vertices;
 	std::vector<unsigned int> indices;
@@ -476,7 +594,6 @@ void world::newChunk(int x, int y) {
 	for (uint8_t cx = 0; cx < CHUNK_LENGTH; cx++) {
 		for (uint8_t cy = 0; cy < CHUNK_LENGTH; cy++) {
 			//uint8_t height = (uint8_t)(((perlinNoise[get2dCoord(cx, cy)] + 1.5f) * 0.36f) * CHUNK_HEIGHT); //TO TRZEBA ZAKTUALIZOWAC DO GENERACJI Z OKTAWAMI
-
 			uint8_t height = (cx % 4 || cy % 4) ? 2 : 90;
 			
 			for (uint8_t cz = 0; cz <= height - 2; ++cz) {
@@ -508,6 +625,19 @@ void world::deleteChunk(int x, int y) {
 		chunks.erase(it);
 	}
 	existingChunks.erase({ x, y });
+}
+
+uint8_t world::getBlockWorldspace(int x, int y, int z) {
+	int chunkX = x * CHUNK_LENGTH_RECIPROCAL;
+	int chunkY = y * CHUNK_LENGTH_RECIPROCAL;
+
+	int blockX = x - chunkX * CHUNK_LENGTH;
+	int blockY = y - chunkY * CHUNK_LENGTH;
+
+	if (blockX < 0) blockX += CHUNK_LENGTH - 1;
+	if (blockY < 0) blockY += CHUNK_LENGTH - 1;
+	
+	return getBlock(chunkX, chunkY, blockX, blockY, z);
 }
 
 uint8_t world::getBlock(int chunkX, int chunkY, uint8_t x, uint8_t y, uint8_t z) {

@@ -15,14 +15,13 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-//CHUNK SETTINGS (in player.h as well?)
 const unsigned short int CHUNK_HEIGHT = 100, CHUNK_LENGTH = 16;
 const float CHUNK_LENGTH_RECIPROCAL = 1.0f / CHUNK_LENGTH;
 
 class world {
 private:
 	//WORLD SETTINGS
-	const unsigned short int RENDER_DISTANCE_CHUNKS = 10;
+	const unsigned short int RENDER_DISTANCE_CHUNKS = 10, BLOCK_SIZE = 1;
 	static const unsigned short int CHUNK_VOLUME = CHUNK_HEIGHT * CHUNK_LENGTH * CHUNK_LENGTH;
 
 	//GENERATION SETTINGS
@@ -31,9 +30,9 @@ private:
 	const float PERSISTANCE = 0.5f;
 
 	int playerChunkX = 0, playerChunkY = 0, lastPlayerChunkX = 1, lastPlayerChunkY = 1;
-	glm::vec3 playerPosition{};
+	glm::vec3 playerPosition{}, playerVelocity{};
 
-	const player& playerOne;
+	player& playerOne;
 	camera& cam;
 
 	const float blockVertices[180] = {
@@ -107,6 +106,7 @@ private:
 		}
 	};
 
+	/*
 	struct overlapInfo {
 		bool isOverlapping;
 		float overlapX;
@@ -120,13 +120,20 @@ private:
 		DimensionOverlap overlapX = DimensionOverlap::null;
 		DimensionOverlap overlapY = DimensionOverlap::null;
 		DimensionOverlap overlapZ = DimensionOverlap::null;
+	};*/
+
+	struct overlapInfo {
+		bool isOverlaping = false;
+		unsigned short int timeToColisoinE_4 = USHRT_MAX; // jesli za malo dokladnosci to jeszcze jeden bajt wolny
+		glm::vec3 overlapDistance{};
 	};
 
 	std::unordered_map<std::pair<int, int>, std::unique_ptr<chunk>, pairHash> chunks;
 	std::unordered_set<std::pair<int, int>, pairHash> existingChunks;
 
-	overlapInfo overlapAABB(const player::Aabb& playerAABB, const player::Aabb& blockAABB);
-	overlapInfoTruncation overlapAABBtruncation(const player::Aabb& playerAABB, const player::Aabb& blockAABB);
+	//overlapInfo overlapAABB(const player::Aabb& playerAABB, const player::Aabb& blockAABB);
+	//overlapInfoTruncation overlapAABBtruncation(const player::Aabb& playerAABB, const player::Aabb& blockAABB);
+	overlapInfo sweptAABBcolisonCheckInfo(int x, int y, int z) const;
 	void generateChunkMesh(chunk& c);
 	float cubicInterpolator(float a, float b, float weight);
 	float lerp(float a, float b, float weight);
@@ -135,6 +142,10 @@ private:
 	std::pair<float, float> gradientRNG(int x, int y);
 	void perlinNoiseOctave(int chunkX, int chunkY, float* perlinNoise, float frequency, float amplitude);
 	void perlinNoiseGenerator(int chunkX, int chunkY, float* perlinNoise, unsigned int octaves, float persistence);
+
+	uint8_t getBlockWorldspace(int X, int Y, int Z);
+	uint8_t getBlock(int chunkX, int chunkY, uint8_t x, uint8_t y, uint8_t z);
+	void setBlock(int chunkX, int chunkY, uint8_t x, uint8_t y, uint8_t z, uint8_t blockType);
 
 	//inline podmienia kod tam gdzie uzywamy funkcji
 	inline int get3dCoord(uint8_t x, uint8_t y, uint8_t z) const {
@@ -145,20 +156,17 @@ private:
 	}
 
 public:
-	world(const player& playerOne, camera& cam);
+	world(player& playerOne, camera& cam);
 
 	//alias chunk type
 	using Chunk = chunk;
 
-	bool onTheFloor = false;
-
-	void AABBcolisionDetection();
+	void updatePlayerPosition();
+	void sweptAABBcolisonCheck();
+	//void AABBcolisionDetection();
 	void createChunks();
 	void newChunk(int x, int y);
 	void deleteChunk(int x, int y);
-
-	uint8_t getBlock(int chunkX, int chunkY, uint8_t x, uint8_t y, uint8_t z);
-	void setBlock(int chunkX, int chunkY, uint8_t x, uint8_t y, uint8_t z, uint8_t blockType);
 
 	const std::unordered_map<std::pair<int, int>, std::unique_ptr<Chunk>, pairHash>& getChunks() const {
 		return chunks;

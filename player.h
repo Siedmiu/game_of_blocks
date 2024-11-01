@@ -10,9 +10,10 @@
 
 class player {
 private:
-    const float WALKING_ACCELERATION = 20, SPRINTING_ACCELERATION = 40, AIR_RESISTANCE = 10, FLOOR_FRICTION = 10;
-    const float MAX_WALKING_SPEED = 4.3, MAX_SPRINT_SPEED = 7.1;
-    const float JUMP_SPEED = 10;
+    //they dont all need to be floats
+    const float WALKING_ACCELERATION = 20.0f, SPRINTING_ACCELERATION = 40.0f, AIR_RESISTANCE = 10.0f, FLOOR_FRICTION = 10.0f;
+    const float MAX_WALKING_SPEED = 4.3f, MAX_SPRINT_SPEED = 7.1f;
+    const float JUMP_SPEED = 10.0f;
 
     float playerX, playerY, playerZ;
     glm::vec3 playerVelocity;
@@ -23,6 +24,7 @@ private:
         glm::vec3 min;
         glm::vec3 max;
     };
+
     camera& cam;
 
     void decelerate(float time);
@@ -41,6 +43,8 @@ public:
     void accelBACK(float time);
     void accelLEFT(float time);
     void accelRIGHT(float time);
+    void accelFlyUP(float time);
+    void accelFlyDOWN(float time);
 
     void movePlayer(float time);
 
@@ -48,6 +52,7 @@ public:
     void updatePlayerPositionVector(glm::vec3 pos);
     void updatePlayerVelocity(float vX, float vY, float vZ);
     AABB getPlayerAABB() const;
+    AABB getPlayerBroadAABB() const;
     //glm::vec2 getPlayerChunk() const;
     glm::vec3 getPlayerPosition() const;
     glm::vec3 getPlayerVelocity() const;

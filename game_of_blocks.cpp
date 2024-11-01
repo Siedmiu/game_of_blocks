@@ -1,6 +1,7 @@
 //https://iquilezles.org/articles/morenoise/
 //https://www.scratchapixel.com/lessons/procedural-generation-virtual-worlds/procedural-patterns-noise-part-1/creating-simple-2D-noise.html
 //https://learnopengl.com/Lighting/Basic-Lighting
+//https://gamedev.net/tutorials/programming/general-and-gameplay-programming/swept-aabb-collision-detection-and-response-r3084/
 
 //do zrobienia
 // naprawic tekstury
@@ -38,8 +39,8 @@
 #include <iostream>
 //#include <thread>
 
-const float SCR_WIDTH = 1920; //1280
-const float SCR_HEIGHT = 1080; //720
+const int SCR_WIDTH = 1920; //1280
+const int SCR_HEIGHT = 1080; //720
 const float FOV = 70.0f;
 const float TIMESTEP = 1.0f / 60.0f;
 
@@ -109,7 +110,7 @@ int main() {
     std::vector<unsigned int> textures = textureLoader.loadTextures(textureFiles);
 
     shaders.use();
-    for (size_t i = 0; i < textures.size(); i++) {
+    for (int i = 0; i < textures.size(); i++) {
         shaders.setInt("texturesArray[" + std::to_string(i) + "]", i);
     }
 
@@ -169,6 +170,7 @@ int main() {
 
     //initial positon
     player.updatePlayerPositionVector(cam.getXYZ());
+    world.updatePlayerPosition();
 
     //gravity move to velocity
     //const float GRAVITATIONAL_CONSTANT = 9.81f;
@@ -206,11 +208,12 @@ int main() {
                 fallingVelocity = 0.0f;
             }*/
 
+            //Colision detection
+            world.sweptAABBcolisonCheck();
+            
             //handle velocity, air resistance, friction and gravity
             player.movePlayer(TIMESTEP);
-
-            //Colision detection
-            //world.AABBcolisionDetection();
+            world.updatePlayerPosition();
 
             glm::mat4 view = cam.getViewMatrix();
             shaders.setMat4("view", view);
