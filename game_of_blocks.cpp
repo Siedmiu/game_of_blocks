@@ -15,7 +15,7 @@
 //
 
 //block id
-//255 = air
+//32 = air
 //0 = grass
 //1 = dirt
 //2 = stone

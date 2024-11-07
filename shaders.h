@@ -9,41 +9,6 @@
 class shaders {
 private:
 	//shadery (kompilowane runtime)
-	const char* vertexShaderSource = 
-		"#version 330 core\n"
-		"layout (location = 0) in vec3 aPos;\n"
-		"layout (location = 1) in vec2 aTexCoord;\n"
-		"layout(location = 2) in float aTexID;\n"
-
-		"out vec2 TexCoord;\n"
-		"out float TexID;\n"
-
-		"uniform mat4 model;\n"
-		"uniform mat4 view;\n"
-		"uniform mat4 projection;\n"
-
-		"void main()\n"
-		"{\n"
-		"	gl_Position = projection * view * model * vec4(aPos, 1.0);\n"
-		"	TexCoord = vec2(aTexCoord.x, aTexCoord.y);\n"
-		"	TexID = aTexID;\n"
-		"}\0";
-
-	const char* fragmentShaderSource =
-		"#version 330 core\n"
-
-		"out vec4 FragColor;\n"
-
-		"in vec2 TexCoord;\n"
-		"in float TexID;\n"
-
-		"uniform sampler2D texturesArray[3];\n"
-
-		"void main()\n"
-		"{\n"
-		"	FragColor = texture(texturesArray[int(TexID)], TexCoord);\n"
-		"}\n\0";
-
 	unsigned int vertexShader, fragmentShader, shaderProgram;
 
 public:

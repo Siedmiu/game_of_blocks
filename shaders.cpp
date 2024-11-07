@@ -1,17 +1,23 @@
 #include "shaders.h"
+#include "shader_loader.h"
 
 shaders::shaders() {
     //kompilacja shaderow
-    
+    std::string vertexShaderSource = ShaderLoader::loadShaderFromFile("vertex_shader.txt");
+    std::string fragmentShaderSource = ShaderLoader::loadShaderFromFile("fragment_shader.txt");
+
+    const char* vertexShaderCode = vertexShaderSource.c_str();
+    const char* fragmentShaderCode = fragmentShaderSource.c_str();
+
     //id shadera
     vertexShader = glCreateShader(GL_VERTEX_SHADER);
     //powiazanie kodu shadera
-    glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
+    glShaderSource(vertexShader, 1, &vertexShaderCode, NULL);
     glCompileShader(vertexShader);
     checkCompileErrors(vertexShader, "VERTEX");
     
     fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
+    glShaderSource(fragmentShader, 1, &fragmentShaderCode, NULL);
     glCompileShader(fragmentShader);
     checkCompileErrors(fragmentShader, "FRAGMENT");
 

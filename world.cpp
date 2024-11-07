@@ -79,7 +79,7 @@ void world::AABBcolisionDetection() {
 
 				uint8_t blockType = getBlock(blockChunkX, blockChunkY, (uint8_t)blockX, (uint8_t)blockY, blockZ);
 
-				if (blockType != 255) {
+				if (blockType != 32) {
 					blockAABB.min.x = x;
 					blockAABB.min.y = y;
 					blockAABB.min.z = z;
@@ -299,7 +299,7 @@ world::overlapInfo world::sweptAABBcolisonCheckInfo(int x, int y, int z) const {
 void world::sweptAABBcolisonCheck() {
 	player::Aabb broadAABB = playerOne.getPlayerAABB();
 	world::overlapInfo overlapNearest, overlapTemp;
-	uint8_t blockType = 255;
+	uint8_t blockType = 32;
 	int blockX = 0, blockY = 0, blockChunkX = 0, blockChunkY = 0;
 
 	for (int z = (int)broadAABB.min.z; z <= (int)broadAABB.max.z; z++) {
@@ -308,7 +308,7 @@ void world::sweptAABBcolisonCheck() {
 		for (int y = (int)broadAABB.min.y; y <= (int)broadAABB.max.y; y++) {
 			for (int x = (int)broadAABB.min.x; x <= (int)broadAABB.max.x; x++) {
 				blockType = getBlockWorldspace(x, y, z);
-				if (blockType == 255) continue;
+				if (blockType == 32) continue;
 
 				overlapTemp = sweptAABBcolisonCheckInfo(x, y, z);
 				if (!overlapTemp.isOverlaping) continue;
@@ -436,96 +436,283 @@ void world::generateChunkMesh(chunk& c) {
 		for (uint8_t cy = 0; cy < CHUNK_LENGTH; cy++) {
 			for (uint8_t cz = 0; cz < CHUNK_HEIGHT; cz++) {
 				blockID = c.chunkBlockData[get3dCoord(cx, cy, cz)];
-				if (blockID == 255) continue; //skip air
+				if (blockID == 32) continue; //skip air
 				blockPosition = glm::vec3(cx, cz, cy);
 
 				//check neighbours
-				if (cx != 0) if (c.chunkBlockData[get3dCoord(cx - 1, cy, cz)] != 255) {
+				if (cx != 0) if (c.chunkBlockData[get3dCoord(cx - 1, cy, cz)] != 32) {
 					left = false;
 				};
-				if (cx != CHUNK_LENGTH - 1) if (c.chunkBlockData[get3dCoord(cx + 1, cy, cz)] != 255) {
+				if (cx != CHUNK_LENGTH - 1) if (c.chunkBlockData[get3dCoord(cx + 1, cy, cz)] != 32) {
 					right = false;
 				};
-				if (cy != 0) if (c.chunkBlockData[get3dCoord(cx, cy - 1, cz)] != 255) {
+				if (cy != 0) if (c.chunkBlockData[get3dCoord(cx, cy - 1, cz)] != 32) {
 					back = false;
 				};
-				if (cy != CHUNK_LENGTH - 1) if (c.chunkBlockData[get3dCoord(cx, cy + 1, cz)] != 255) {
+				if (cy != CHUNK_LENGTH - 1) if (c.chunkBlockData[get3dCoord(cx, cy + 1, cz)] != 32) {
 					front = false;
 				};
-				if (cz != 0) if (c.chunkBlockData[get3dCoord(cx, cy, cz - 1)] != 255) {
+				if (cz != 0) if (c.chunkBlockData[get3dCoord(cx, cy, cz - 1)] != 32) {
 					bottom = false;
 				};
 				if (cz == 0) {
 					bottom = false;
 				};
-				if (cz != CHUNK_HEIGHT - 1) if (c.chunkBlockData[get3dCoord(cx, cy, cz + 1)] != 255) {
+				if (cz != CHUNK_HEIGHT - 1) if (c.chunkBlockData[get3dCoord(cx, cy, cz + 1)] != 32) {
 					top = false;
 				};
+
+				//store 6 floats in 1 float
+				//5 bits for x; 5 bits for y; 8 bits for z; 1 bit for TexID.x; 1 bit for TexID.y; 5 bit for texID; 25 bits total, 7 unoccupied
+				//max x,y = 31; max z = 255; max t,s = 1; max texID = 32
+				//0b 00000 00000 00000000 0 0 00000 -------
+				//
+				union floatToUli {
+					float floatData;
+					unsigned long int uliData;
+				};
+				floatToUli vertexData{};
+				unsigned long int container{}; //same bit length as a float
 
 				int faceVertices = 0;
 				if (back) {
 					for (int j = 0; j < 6; j++) {
-						vertices.push_back(blockVertices[j * 5] + blockPosition.x);
-						vertices.push_back(blockVertices[j * 5 + 1] + blockPosition.y);
-						vertices.push_back(blockVertices[j * 5 + 2] + blockPosition.z);
-						vertices.push_back(blockVertices[j * 5 + 3]);
-						vertices.push_back(blockVertices[j * 5 + 4]);
-						vertices.push_back((float)blockID);
+						vertexData.uliData = 0;
+						container = 0;
+
+						//blockPosition.x
+						container = (blockVertices[j * 5] + blockPosition.x);
+						container = container << (sizeof(float) * 8 - 5); //first 5
+						vertexData.uliData |= container;
+
+						//blockPosition.y
+						container = (blockVertices[j * 5 + 1] + blockPosition.y);
+						container = container << (sizeof(float) * 8 - 5 - 5); // 6 to 10
+						vertexData.uliData |= container;
+
+						//blockPosition.z
+						container = (blockVertices[j * 5 + 2] + blockPosition.z);
+						container = container << (sizeof(float) * 8 - 5 - 5 - 8); // 11 to 18
+						vertexData.uliData |= container;
+
+						//texture coordintae s
+						container = (blockVertices[j * 5 + 3]);
+						container = container << (sizeof(float) * 8 - 5 - 5 - 8 - 1); //19
+						vertexData.uliData |= container;
+
+						//texture coordintae t
+						container = (blockVertices[j * 5 + 4]);
+						container = container << (sizeof(float) * 8 - 5 - 5 - 8 - 1 - 1); //20
+						vertexData.uliData |= container;
+
+						//texture ID
+						container = static_cast<unsigned long int>(blockID);
+						container = container << (sizeof(float) * 8 - 5 - 5 - 8 - 1 - 1 - 5); //21 to 25
+						vertexData.uliData |= container;
+
+						vertices.push_back(vertexData.floatData);
+
+						//vertices.push_back(blockVertices[j * 5] + blockPosition.x);
+						//vertices.push_back(blockVertices[j * 5 + 1] + blockPosition.y);
+						//vertices.push_back(blockVertices[j * 5 + 2] + blockPosition.z);
+						//vertices.push_back(blockVertices[j * 5 + 3]);
+						//vertices.push_back(blockVertices[j * 5 + 4]);
+						//vertices.push_back(static_cast<float>(blockID));
 					}
 					faceVertices += 6;
 				}
 				if (front) {
 					for (int j = 6; j < 12; j++) {
-						vertices.push_back(blockVertices[j * 5] + blockPosition.x);
-						vertices.push_back(blockVertices[j * 5 + 1] + blockPosition.y);
-						vertices.push_back(blockVertices[j * 5 + 2] + blockPosition.z);
-						vertices.push_back(blockVertices[j * 5 + 3]);
-						vertices.push_back(blockVertices[j * 5 + 4]);
-						vertices.push_back((float)blockID);
+						vertexData.uliData = 0;
+						container = 0;
+
+						//blockPosition.x
+						container = (blockVertices[j * 5] + blockPosition.x);
+						container = container << (sizeof(float) * 8 - 5); //first 5
+						vertexData.uliData |= container;
+
+						//blockPosition.y
+						container = (blockVertices[j * 5 + 1] + blockPosition.y);
+						container = container << (sizeof(float) * 8 - 10); // 6 to 10
+						vertexData.uliData |= container;
+
+						//blockPosition.z
+						container = (blockVertices[j * 5 + 2] + blockPosition.z);
+						container = container << (sizeof(float) * 8 - 18); // 11 to 18
+						vertexData.uliData |= container;
+
+						//texture coordintae s
+						container = (blockVertices[j * 5 + 3]);
+						container = container << (sizeof(float) * 8 - 19); //19
+						vertexData.uliData |= container;
+
+						//texture coordintae t
+						container = (blockVertices[j * 5 + 4]);
+						container = container << (sizeof(float) * 8 - 20); //20
+						vertexData.uliData |= container;
+
+						//texture ID
+						container = static_cast<unsigned long int>(blockID);
+						container = container << (sizeof(float) * 8 - 25); //21 to 25
+						vertexData.uliData |= container;
+
+						vertices.push_back(vertexData.floatData);
 					}
 					faceVertices += 6;
 				}
 				if (left) {
 					for (int j = 12; j < 18; j++) {
-						vertices.push_back(blockVertices[j * 5] + blockPosition.x);
-						vertices.push_back(blockVertices[j * 5 + 1] + blockPosition.y);
-						vertices.push_back(blockVertices[j * 5 + 2] + blockPosition.z);
-						vertices.push_back(blockVertices[j * 5 + 3]);
-						vertices.push_back(blockVertices[j * 5 + 4]);
-						vertices.push_back((float)blockID);
+						vertexData.uliData = 0;
+						container = 0;
+
+						//blockPosition.x
+						container = (blockVertices[j * 5] + blockPosition.x);
+						container = container << (sizeof(float) * 8 - 5); //first 5
+						vertexData.uliData |= container;
+
+						//blockPosition.y
+						container = (blockVertices[j * 5 + 1] + blockPosition.y);
+						container = container << (sizeof(float) * 8 - 10); // 6 to 10
+						vertexData.uliData |= container;
+
+						//blockPosition.z
+						container = (blockVertices[j * 5 + 2] + blockPosition.z);
+						container = container << (sizeof(float) * 8 - 18); // 11 to 18
+						vertexData.uliData |= container;
+
+						//texture coordintae s
+						container = (blockVertices[j * 5 + 3]);
+						container = container << (sizeof(float) * 8 - 19); //19
+						vertexData.uliData |= container;
+
+						//texture coordintae t
+						container = (blockVertices[j * 5 + 4]);
+						container = container << (sizeof(float) * 8 - 20); //20
+						vertexData.uliData |= container;
+
+						//texture ID
+						container = static_cast<unsigned long int>(blockID);
+						container = container << (sizeof(float) * 8 - 25); //21 to 25
+						vertexData.uliData |= container;
+
+						vertices.push_back(vertexData.floatData);
 					}
 					faceVertices += 6;
 				}
 				if (right) {
 					for (int j = 18; j < 24; j++) {
-						vertices.push_back(blockVertices[j * 5] + blockPosition.x);
-						vertices.push_back(blockVertices[j * 5 + 1] + blockPosition.y);
-						vertices.push_back(blockVertices[j * 5 + 2] + blockPosition.z);
-						vertices.push_back(blockVertices[j * 5 + 3]);
-						vertices.push_back(blockVertices[j * 5 + 4]);
-						vertices.push_back((float)blockID);
+						vertexData.uliData = 0;
+						container = 0;
+
+						//blockPosition.x
+						container = (blockVertices[j * 5] + blockPosition.x);
+						container = container << (sizeof(float) * 8 - 5); //first 5
+						vertexData.uliData |= container;
+
+						//blockPosition.y
+						container = (blockVertices[j * 5 + 1] + blockPosition.y);
+						container = container << (sizeof(float) * 8 - 10); // 6 to 10
+						vertexData.uliData |= container;
+
+						//blockPosition.z
+						container = (blockVertices[j * 5 + 2] + blockPosition.z);
+						container = container << (sizeof(float) * 8 - 18); // 11 to 18
+						vertexData.uliData |= container;
+
+						//texture coordintae s
+						container = (blockVertices[j * 5 + 3]);
+						container = container << (sizeof(float) * 8 - 19); //19
+						vertexData.uliData |= container;
+
+						//texture coordintae t
+						container = (blockVertices[j * 5 + 4]);
+						container = container << (sizeof(float) * 8 - 20); //20
+						vertexData.uliData |= container;
+
+						//texture ID
+						container = static_cast<unsigned long int>(blockID);
+						container = container << (sizeof(float) * 8 - 25); //21 to 25
+						vertexData.uliData |= container;
+
+						vertices.push_back(vertexData.floatData);
 					}
 					faceVertices += 6;
 				}
 				if (bottom) {
 					for (int j = 24; j < 30; j++) {
-						vertices.push_back(blockVertices[j * 5] + blockPosition.x);
-						vertices.push_back(blockVertices[j * 5 + 1] + blockPosition.y);
-						vertices.push_back(blockVertices[j * 5 + 2] + blockPosition.z);
-						vertices.push_back(blockVertices[j * 5 + 3]);
-						vertices.push_back(blockVertices[j * 5 + 4]);
-						vertices.push_back((float)blockID);
+						vertexData.uliData = 0;
+						container = 0;
+
+						//blockPosition.x
+						container = (blockVertices[j * 5] + blockPosition.x);
+						container = container << (sizeof(float) * 8 - 5); //first 5
+						vertexData.uliData |= container;
+
+						//blockPosition.y
+						container = (blockVertices[j * 5 + 1] + blockPosition.y);
+						container = container << (sizeof(float) * 8 - 10); // 6 to 10
+						vertexData.uliData |= container;
+
+						//blockPosition.z
+						container = (blockVertices[j * 5 + 2] + blockPosition.z);
+						container = container << (sizeof(float) * 8 - 18); // 11 to 18
+						vertexData.uliData |= container;
+
+						//texture coordintae s
+						container = (blockVertices[j * 5 + 3]);
+						container = container << (sizeof(float) * 8 - 19); //19
+						vertexData.uliData |= container;
+
+						//texture coordintae t
+						container = (blockVertices[j * 5 + 4]);
+						container = container << (sizeof(float) * 8 - 20); //20
+						vertexData.uliData |= container;
+
+						//texture ID
+						container = static_cast<unsigned long int>(blockID);
+						container = container << (sizeof(float) * 8 - 25); //21 to 25
+						vertexData.uliData |= container;
+
+						vertices.push_back(vertexData.floatData);
 					}
 					faceVertices += 6;
 				}
 				if (top) {
 					for (int j = 30; j < 36; j++) {
-						vertices.push_back(blockVertices[j * 5] + blockPosition.x);
-						vertices.push_back(blockVertices[j * 5 + 1] + blockPosition.y);
-						vertices.push_back(blockVertices[j * 5 + 2] + blockPosition.z);
-						vertices.push_back(blockVertices[j * 5 + 3]);
-						vertices.push_back(blockVertices[j * 5 + 4]);
-						vertices.push_back((float)blockID);
+						vertexData.uliData = 0;
+						container = 0;
+
+						//blockPosition.x
+						container = (blockVertices[j * 5] + blockPosition.x);
+						container = container << (sizeof(float) * 8 - 5); //first 5
+						vertexData.uliData |= container;
+
+						//blockPosition.y
+						container = (blockVertices[j * 5 + 1] + blockPosition.y);
+						container = container << (sizeof(float) * 8 - 10); // 6 to 10
+						vertexData.uliData |= container;
+
+						//blockPosition.z
+						container = (blockVertices[j * 5 + 2] + blockPosition.z);
+						container = container << (sizeof(float) * 8 - 18); // 11 to 18
+						vertexData.uliData |= container;
+
+						//texture coordintae s
+						container = (blockVertices[j * 5 + 3]);
+						container = container << (sizeof(float) * 8 - 19); //19
+						vertexData.uliData |= container;
+
+						//texture coordintae t
+						container = (blockVertices[j * 5 + 4]);
+						container = container << (sizeof(float) * 8 - 20); //20
+						vertexData.uliData |= container;
+
+						//texture ID
+						container = static_cast<unsigned long int>(blockID);
+						container = container << (sizeof(float) * 8 - 25); //21 to 25
+						vertexData.uliData |= container;
+
+						vertices.push_back(vertexData.floatData);
 					}
 					faceVertices += 6;
 				}
@@ -533,8 +720,6 @@ void world::generateChunkMesh(chunk& c) {
 				for (int k = 0; k < faceVertices; k++) {
 					indices.push_back(c.indexCount + k);
 				}
-
-				c.indexCount += faceVertices;
 
 				back = true;
 				front = true;
@@ -545,6 +730,8 @@ void world::generateChunkMesh(chunk& c) {
 			}
 		}
 	}
+
+	c.indexCount = indices.size();
 
 	//to MUSI byc w glownym watku zeby OpenGL byl szczesliwy
 	glGenVertexArrays(1, &c.VAO);
@@ -559,17 +746,9 @@ void world::generateChunkMesh(chunk& c) {
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, c.EBO);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
 
-	//atrybut pozycji
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+	//atrybut wszystkiego
+	glVertexAttribPointer(0, 6, GL_FLOAT, GL_FALSE, sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
-
-	//wspolrzedne tekstury
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
-	glEnableVertexAttribArray(1);
-
-	//ID tekstury
-	glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(5 * sizeof(float)));
-	glEnableVertexAttribArray(2);
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
@@ -602,7 +781,7 @@ void world::newChunk(int x, int y) {
 			newChunk->chunkBlockData[get3dCoord(cx, cy, height - 1)] = 1; // Dirt
 			newChunk->chunkBlockData[get3dCoord(cx, cy, height)] = 0; // Grass
 			for (uint8_t cz = height + 1; cz < CHUNK_HEIGHT; ++cz) {
-				newChunk->chunkBlockData[get3dCoord(cx, cy, cz)] = 255; //Air
+				newChunk->chunkBlockData[get3dCoord(cx, cy, cz)] = 32; //Air
 			}
 		}
 	}

@@ -48,6 +48,9 @@
     <ClCompile Include="errorReporting.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="shader_loader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="camera.h">
@@ -80,8 +83,13 @@
     <ClInclude Include="errorReporting.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="shader_loader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="chrono.txt" />
+    <Text Include="vertex_shader.txt" />
+    <Text Include="fragment_shader.txt" />
   </ItemGroup>
 </Project>
