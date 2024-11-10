@@ -144,7 +144,6 @@
     <ClCompile Include="player.cpp" />
     <ClCompile Include="renderer.cpp" />
     <ClCompile Include="shaders.cpp" />
-    <ClCompile Include="shader_loader.cpp" />
     <ClCompile Include="stb_image.cpp" />
     <ClCompile Include="texture_loader.cpp" />
     <ClCompile Include="window.cpp" />
@@ -156,7 +155,6 @@
     <ClInclude Include="player.h" />
     <ClInclude Include="renderer.h" />
     <ClInclude Include="shaders.h" />
-    <ClInclude Include="shader_loader.h" />
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="texture_loader.h" />
     <ClInclude Include="uniformSetters.h" />

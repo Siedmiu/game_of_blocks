@@ -27,7 +27,6 @@ void renderer::render(unsigned int VAO) {
         glDrawElements(GL_TRIANGLES, chunk->indexCount, GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
     }
-
 }
 
 void renderer::setMat4(const std::string& name, const glm::mat4& mat) const {

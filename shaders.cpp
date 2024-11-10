@@ -1,13 +1,38 @@
 #include "shaders.h"
-#include "shader_loader.h"
 
 shaders::shaders() {
     //kompilacja shaderow
-    std::string vertexShaderSource = ShaderLoader::loadShaderFromFile("vertex_shader.txt");
-    std::string fragmentShaderSource = ShaderLoader::loadShaderFromFile("fragment_shader.txt");
 
-    const char* vertexShaderCode = vertexShaderSource.c_str();
-    const char* fragmentShaderCode = fragmentShaderSource.c_str();
+    std::string vertexCode;
+    std::string fragmentCode;
+    std::ifstream vShaderFile;
+    std::ifstream fShaderFile;
+
+    vShaderFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+    fShaderFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+
+    try
+    {
+        vShaderFile.open("vertex_shader.txt");
+        fShaderFile.open("fragment_shader.txt");
+        std::stringstream vShaderStream, fShaderStream;
+
+        vShaderStream << vShaderFile.rdbuf();
+        fShaderStream << fShaderFile.rdbuf();
+
+        vShaderFile.close();
+        fShaderFile.close();
+
+        vertexCode = vShaderStream.str();
+        fragmentCode = fShaderStream.str();
+    }
+    catch (std::ifstream::failure& e)
+    {
+        std::cout << "ERROR::SHADER::FILE_NOT_SUCCESSFULLY_READ: " << e.what() << std::endl;
+    }
+
+    const char* vertexShaderCode = vertexCode.c_str();
+    const char* fragmentShaderCode = fragmentCode.c_str();
 
     //id shadera
     vertexShader = glCreateShader(GL_VERTEX_SHADER);
