@@ -1,0 +1,27 @@
+#version 330 core
+layout (location = 0) in float vertexData;
+
+out vec2 TexCoord;
+out float TexID;
+
+uniform mat4 model;
+uniform mat4 view;
+uniform mat4 projection;
+
+void main()
+{
+	uint data = floatBitsToUint(vertexData);
+
+	uint x = (data >> 27) & 31u; // 5 bits
+    uint y = (data >> 22) & 31u; // 5 bits
+    uint z = (data >> 14) & 255u; // 8 bits
+    uint texX = (data >> 13) & 1u; // 1 bit
+    uint texY = (data >> 12) & 1u; // 1 bit
+    uint texID = (data >> 7) & 31u; // 5 bits
+
+	vec3 Pos = vec3(float(x), float(y), float(z));
+
+	gl_Position = projection * view * model * vec4(Pos, 1.0);
+	TexCoord = vec2(float(texX), float(texY));
+	TexID = float(texID);
+}

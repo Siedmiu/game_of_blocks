@@ -104,7 +104,8 @@ int main() {
     std::vector<std::string> textureFiles = {
         "grass_block_top.png",
         "dirt.png",
-        "stone.png"
+        "stone.png",
+        "missing.png"
     };
 
     std::vector<unsigned int> textures = textureLoader.loadTextures(textureFiles);

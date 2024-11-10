@@ -206,8 +206,8 @@ void world::AABBcolisionDetection() {
 void world::updatePlayerPosition() {
 	playerPosition = playerOne.getPlayerPosition();
 	playerVelocity = playerOne.getPlayerVelocity();
-	playerChunkX = playerPosition.x * CHUNK_LENGTH_RECIPROCAL;
-	playerChunkY = playerPosition.y * CHUNK_LENGTH_RECIPROCAL;
+	playerChunkX = int(playerPosition.x * CHUNK_LENGTH_RECIPROCAL);
+	playerChunkY = int(playerPosition.y * CHUNK_LENGTH_RECIPROCAL);
 }
 
 world::overlapInfo world::sweptAABBcolisonCheckInfo(int x, int y, int z) const {
@@ -215,12 +215,12 @@ world::overlapInfo world::sweptAABBcolisonCheckInfo(int x, int y, int z) const {
 	world::overlapInfo overlapInfo;
 
 	player::Aabb blockAABB{};
-	blockAABB.min.x = x - playerOne.PLAYERWIDTH * 0.5;
-	blockAABB.min.y = y - playerOne.PLAYERWIDTH * 0.5;
-	blockAABB.min.z = z - playerOne.PLAYERHEIGHT * 0.5;
-	blockAABB.max.x = x + BLOCK_SIZE + playerOne.PLAYERWIDTH * 0.5;
-	blockAABB.max.y = y + BLOCK_SIZE + playerOne.PLAYERWIDTH * 0.5;
-	blockAABB.max.z = z + BLOCK_SIZE + playerOne.PLAYERHEIGHT * 0.5;
+	blockAABB.min.x = float(x - playerOne.PLAYERWIDTH * 0.5);
+	blockAABB.min.y = float(y - playerOne.PLAYERWIDTH * 0.5);
+	blockAABB.min.z = float(z - playerOne.PLAYERHEIGHT * 0.5);
+	blockAABB.max.x = float(x + BLOCK_SIZE + playerOne.PLAYERWIDTH * 0.5);
+	blockAABB.max.y = float(y + BLOCK_SIZE + playerOne.PLAYERWIDTH * 0.5);
+	blockAABB.max.z = float(z + BLOCK_SIZE + playerOne.PLAYERHEIGHT * 0.5);
 
 	//determine the colision using playerVelocity and playerPosition
 	float t_min = -FLT_MAX;
@@ -807,11 +807,11 @@ void world::deleteChunk(int x, int y) {
 }
 
 uint8_t world::getBlockWorldspace(int x, int y, int z) {
-	int chunkX = x * CHUNK_LENGTH_RECIPROCAL;
-	int chunkY = y * CHUNK_LENGTH_RECIPROCAL;
+	int chunkX = int(x * CHUNK_LENGTH_RECIPROCAL);
+	int chunkY = int(y * CHUNK_LENGTH_RECIPROCAL);
 
-	int blockX = x - chunkX * CHUNK_LENGTH;
-	int blockY = y - chunkY * CHUNK_LENGTH;
+	int blockX = int(x - chunkX * CHUNK_LENGTH);
+	int blockY = int(y - chunkY * CHUNK_LENGTH);
 
 	if (blockX < 0) blockX += CHUNK_LENGTH - 1;
 	if (blockY < 0) blockY += CHUNK_LENGTH - 1;
@@ -849,15 +849,15 @@ float world::fade(float a) { //ttv/faide
 }
 
 std::pair<float, float> world::gradientRNG(int i_x, int i_y) { //-1 do 1
-	const unsigned int widthUI = 8 * sizeof(unsigned int);
-	const unsigned int halfwidthUI = widthUI * 0.5;
+	const unsigned int widthInt = 8 * sizeof(int);
+	const unsigned int halfwidthInt = int(widthInt * 0.5);
 	unsigned int a = SEED ^ i_x, b = SEED ^ i_y;
 
 	//szahermaher z bitami na podstawie seed
 	a *= 3284157443;
-	b ^= (a << halfwidthUI) | (a >> (widthUI - halfwidthUI));
+	b ^= (a << halfwidthInt) | (a >> (widthInt - halfwidthInt));
 	b *= 1911520717;
-	a ^= (b << halfwidthUI) | (b >> (widthUI - halfwidthUI));
+	a ^= (b << halfwidthInt) | (b >> (widthInt - halfwidthInt));
 	a *= 2048419325;
 
 	//~0u = 0xFFFFFFFF
@@ -933,7 +933,7 @@ void world::perlinNoiseGenerator(int chunkX, int chunkY, float* perlinNoise, uns
 	float amplitude = 1;
 	float frequency = 1;
 
-	for (int octave = 0; octave < octaves; octave++) {
+	for (unsigned int octave = 0; octave < octaves; octave++) {
 		perlinNoiseOctave(chunkX, chunkY, perlinNoise, frequency, amplitude);
 		amplitude *= persistence;
 		frequency *= 2;

@@ -5,9 +5,7 @@ TextureLoader::TextureLoader() {
     stbi_set_flip_vertically_on_load(true);
 }
 
-TextureLoader::~TextureLoader() {
-    // Cleanup if needed
-}
+TextureLoader::~TextureLoader() {}
 
 void TextureLoader::setTextureParameters() {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
@@ -22,7 +20,7 @@ unsigned int TextureLoader::loadTexture(const std::string& filename) {
     setTextureParameters();
 
     int width, height, nrChannels;
-    unsigned char* data = stbi_load(filename.c_str(), &width, &height, &nrChannels, 0);
+    unsigned char* data = stbi_load(("../textures/" + filename).c_str(), &width, &height, &nrChannels, 0);
 
     if (data) {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);

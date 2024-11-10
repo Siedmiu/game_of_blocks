@@ -21,7 +21,7 @@ const float CHUNK_LENGTH_RECIPROCAL = 1.0f / CHUNK_LENGTH;
 class world {
 private:
 	//WORLD SETTINGS
-	const unsigned short int RENDER_DISTANCE_CHUNKS = 10, BLOCK_SIZE = 1;
+	const unsigned short int RENDER_DISTANCE_CHUNKS = 1, BLOCK_SIZE = 1;
 	static const unsigned short int CHUNK_VOLUME = CHUNK_HEIGHT * CHUNK_LENGTH * CHUNK_LENGTH;
 
 	//GENERATION SETTINGS
@@ -91,9 +91,9 @@ private:
 	};
 
 	struct chunk {
-		int chunkX, chunkY;
-		uint8_t chunkBlockData[CHUNK_VOLUME];
-		unsigned int VAO, VBO, EBO, indexCount;
+		int chunkX{}, chunkY{};
+		uint8_t chunkBlockData[CHUNK_VOLUME]{};
+		unsigned int VAO{}, VBO{}, EBO{}, indexCount{};
 		bool needsUpdate = true, notInFOV = false;
 	};
 
