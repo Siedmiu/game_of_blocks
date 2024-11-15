@@ -13,9 +13,7 @@ void GLAPIENTRY glDebugOutput(GLenum source,
 	const void* userParam)
 {
 	// ignore non-significant error/warning codes
-	if (id == 131169 || id == 131185 || id == 131218 || id == 131204
-		|| id == 131222
-		) return;
+	if (id == 131169 || id == 131185 || id == 131218 || id == 131204 || id == 131222) return;
 	if (type == GL_DEBUG_TYPE_PERFORMANCE) return;
 
 	std::cout << "---------------" << std::endl;

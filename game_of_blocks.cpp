@@ -44,14 +44,6 @@ const int SCR_HEIGHT = 1080; //720
 const float FOV = 70.0f;
 const float TIMESTEP = 1.0f / 60.0f;
 
-/*bool running = true;
-void chunkGenerationThread(world& world) {
-    while (running) {
-        world.createChunks();
-        std::this_thread::sleep_for(std::chrono::milliseconds(50));
-    }
-}*/
-
 int main() {
     //glfw inicjalizacja
     glfwInit();
@@ -87,7 +79,7 @@ int main() {
     //OPENGL------------------------------------------------------------------------
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
-    glEnable(GL_MULTISAMPLE);
+    //glEnable(GL_MULTISAMPLE);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -115,13 +107,12 @@ int main() {
         shaders.setInt("texturesArray[" + std::to_string(i) + "]", i);
     }
 
-    //std::cout << glGetUniformLocation(shaderProgram, "texturesArray[2]") << std::endl;
+    //std::cout << glGetUniformLocation(shaderProgram, "texturesArray[3]") << std::endl;
 
     //generacja ID vbo (obiektu buferowego wierzcholkow) i przypisanie typu
-    unsigned int VBO, VAO, EBO;
+    unsigned int SSBO, VAO;
     glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-    glGenBuffers(1, &EBO);
+    glGenBuffers(1, &SSBO);
 
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
@@ -210,7 +201,7 @@ int main() {
             }*/
 
             //Colision detection
-            world.sweptAABBcolisonCheck();
+            //world.sweptAABBcolisonCheck();
             
             //handle velocity, air resistance, friction and gravity
             player.movePlayer(TIMESTEP);
@@ -234,7 +225,7 @@ int main() {
     //chunkThread.join();
 
     glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &VBO);
+    glDeleteBuffers(1, &SSBO);
     glDeleteProgram(shaderProgram);
 
     glfwTerminate();

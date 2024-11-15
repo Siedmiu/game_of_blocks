@@ -5,7 +5,7 @@ camera::camera() {
     cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
     cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 
-    lastX = 400;
+    lastX = 400; //dlaczego tu tak jest nie pamietal lol
     lastY = 300;
     yaw = -90.0f;
     firstMouse = true;

@@ -426,8 +426,6 @@ void world::createChunks() {
 //nie da sie sprawdzic chunkow obok jak jeszcze nie istnieja, poprawic dla nowego generatora szumu
 void world::generateChunkMesh(chunk& c) {
 	std::vector<float> vertices;
-	std::vector<unsigned int> indices;
-	c.indexCount = 0;
 	glm::vec3 blockPosition;
 	uint8_t blockID;
 	bool back = true, front = true, left = true, right = true, bottom = true, top = true;
@@ -465,7 +463,7 @@ void world::generateChunkMesh(chunk& c) {
 				//store 6 floats in 1 float
 				//5 bits for x; 5 bits for y; 8 bits for z; 1 bit for TexID.x; 1 bit for TexID.y; 5 bit for texID; 25 bits total, 7 unoccupied
 				//max x,y = 31; max z = 255; max t,s = 1; max texID = 32
-				//0b 00000 00000 00000000 0 0 00000 -------
+				//0b 00000 00000000 00000 0 0 00000 -------
 				//
 				union floatToUli {
 					float floatData;
@@ -485,39 +483,43 @@ void world::generateChunkMesh(chunk& c) {
 						container = container << (sizeof(float) * 8 - 5); //first 5
 						vertexData.uliData |= container;
 
-						//blockPosition.y
+						//blockPosition.y is height
 						container = (blockVertices[j * 5 + 1] + blockPosition.y);
-						container = container << (sizeof(float) * 8 - 5 - 5); // 6 to 10
+						container = container << (sizeof(float) * 8 - 5 - 8); //6 to 13
 						vertexData.uliData |= container;
 
 						//blockPosition.z
 						container = (blockVertices[j * 5 + 2] + blockPosition.z);
-						container = container << (sizeof(float) * 8 - 5 - 5 - 8); // 11 to 18
+						container = container << (sizeof(float) * 8 - 5 - 8 - 5); // 14 to 18
 						vertexData.uliData |= container;
 
 						//texture coordintae s
 						container = (blockVertices[j * 5 + 3]);
-						container = container << (sizeof(float) * 8 - 5 - 5 - 8 - 1); //19
+						container = container << (sizeof(float) * 8 - 5 - 8 - 5 - 1); //19
 						vertexData.uliData |= container;
 
 						//texture coordintae t
 						container = (blockVertices[j * 5 + 4]);
-						container = container << (sizeof(float) * 8 - 5 - 5 - 8 - 1 - 1); //20
+						container = container << (sizeof(float) * 8 - 5 - 8 - 5 - 1 - 1); //20
 						vertexData.uliData |= container;
 
 						//texture ID
 						container = static_cast<unsigned long int>(blockID);
-						container = container << (sizeof(float) * 8 - 5 - 5 - 8 - 1 - 1 - 5); //21 to 25
+						container = container << (sizeof(float) * 8 - 5 - 8 - 5 - 1 - 1 - 5); //21 to 25
 						vertexData.uliData |= container;
 
 						vertices.push_back(vertexData.floatData);
 
-						//vertices.push_back(blockVertices[j * 5] + blockPosition.x);
-						//vertices.push_back(blockVertices[j * 5 + 1] + blockPosition.y);
-						//vertices.push_back(blockVertices[j * 5 + 2] + blockPosition.z);
-						//vertices.push_back(blockVertices[j * 5 + 3]);
-						//vertices.push_back(blockVertices[j * 5 + 4]);
-						//vertices.push_back(static_cast<float>(blockID));
+						/*
+						unsigned long int data = vertexData.uliData;
+
+						unsigned long int x = (data >> 27) & 31u; // 5 bits
+						unsigned long int y = (data >> 22) & 31u; // 5 bits
+						unsigned long int z = (data >> 14) & 255u; // 8 bits
+						unsigned long int texX = (data >> 13) & 1u; // 1 bit
+						unsigned long int texY = (data >> 12) & 1u; // 1 bit
+						unsigned long int texID = (data >> 7) & 31u; // 5 bits
+						*/
 					}
 					faceVertices += 6;
 				}
@@ -526,34 +528,28 @@ void world::generateChunkMesh(chunk& c) {
 						vertexData.uliData = 0;
 						container = 0;
 
-						//blockPosition.x
 						container = (blockVertices[j * 5] + blockPosition.x);
-						container = container << (sizeof(float) * 8 - 5); //first 5
+						container = container << (sizeof(float) * 8 - 5);
 						vertexData.uliData |= container;
 
-						//blockPosition.y
 						container = (blockVertices[j * 5 + 1] + blockPosition.y);
-						container = container << (sizeof(float) * 8 - 10); // 6 to 10
+						container = container << (sizeof(float) * 8 - 13);
 						vertexData.uliData |= container;
 
-						//blockPosition.z
 						container = (blockVertices[j * 5 + 2] + blockPosition.z);
-						container = container << (sizeof(float) * 8 - 18); // 11 to 18
+						container = container << (sizeof(float) * 8 - 18);
 						vertexData.uliData |= container;
 
-						//texture coordintae s
 						container = (blockVertices[j * 5 + 3]);
-						container = container << (sizeof(float) * 8 - 19); //19
+						container = container << (sizeof(float) * 8 - 19);
 						vertexData.uliData |= container;
 
-						//texture coordintae t
 						container = (blockVertices[j * 5 + 4]);
-						container = container << (sizeof(float) * 8 - 20); //20
+						container = container << (sizeof(float) * 8 - 20);
 						vertexData.uliData |= container;
 
-						//texture ID
 						container = static_cast<unsigned long int>(blockID);
-						container = container << (sizeof(float) * 8 - 25); //21 to 25
+						container = container << (sizeof(float) * 8 - 25);
 						vertexData.uliData |= container;
 
 						vertices.push_back(vertexData.floatData);
@@ -565,34 +561,28 @@ void world::generateChunkMesh(chunk& c) {
 						vertexData.uliData = 0;
 						container = 0;
 
-						//blockPosition.x
 						container = (blockVertices[j * 5] + blockPosition.x);
-						container = container << (sizeof(float) * 8 - 5); //first 5
+						container = container << (sizeof(float) * 8 - 5);
 						vertexData.uliData |= container;
 
-						//blockPosition.y
 						container = (blockVertices[j * 5 + 1] + blockPosition.y);
-						container = container << (sizeof(float) * 8 - 10); // 6 to 10
+						container = container << (sizeof(float) * 8 - 13);
 						vertexData.uliData |= container;
 
-						//blockPosition.z
 						container = (blockVertices[j * 5 + 2] + blockPosition.z);
-						container = container << (sizeof(float) * 8 - 18); // 11 to 18
+						container = container << (sizeof(float) * 8 - 18);
 						vertexData.uliData |= container;
 
-						//texture coordintae s
 						container = (blockVertices[j * 5 + 3]);
-						container = container << (sizeof(float) * 8 - 19); //19
+						container = container << (sizeof(float) * 8 - 19);
 						vertexData.uliData |= container;
 
-						//texture coordintae t
 						container = (blockVertices[j * 5 + 4]);
-						container = container << (sizeof(float) * 8 - 20); //20
+						container = container << (sizeof(float) * 8 - 20);
 						vertexData.uliData |= container;
 
-						//texture ID
 						container = static_cast<unsigned long int>(blockID);
-						container = container << (sizeof(float) * 8 - 25); //21 to 25
+						container = container << (sizeof(float) * 8 - 25);
 						vertexData.uliData |= container;
 
 						vertices.push_back(vertexData.floatData);
@@ -604,34 +594,28 @@ void world::generateChunkMesh(chunk& c) {
 						vertexData.uliData = 0;
 						container = 0;
 
-						//blockPosition.x
 						container = (blockVertices[j * 5] + blockPosition.x);
-						container = container << (sizeof(float) * 8 - 5); //first 5
+						container = container << (sizeof(float) * 8 - 5);
 						vertexData.uliData |= container;
 
-						//blockPosition.y
 						container = (blockVertices[j * 5 + 1] + blockPosition.y);
-						container = container << (sizeof(float) * 8 - 10); // 6 to 10
+						container = container << (sizeof(float) * 8 - 13);
 						vertexData.uliData |= container;
 
-						//blockPosition.z
 						container = (blockVertices[j * 5 + 2] + blockPosition.z);
-						container = container << (sizeof(float) * 8 - 18); // 11 to 18
+						container = container << (sizeof(float) * 8 - 18);
 						vertexData.uliData |= container;
 
-						//texture coordintae s
 						container = (blockVertices[j * 5 + 3]);
-						container = container << (sizeof(float) * 8 - 19); //19
+						container = container << (sizeof(float) * 8 - 19);
 						vertexData.uliData |= container;
 
-						//texture coordintae t
 						container = (blockVertices[j * 5 + 4]);
-						container = container << (sizeof(float) * 8 - 20); //20
+						container = container << (sizeof(float) * 8 - 20);
 						vertexData.uliData |= container;
 
-						//texture ID
 						container = static_cast<unsigned long int>(blockID);
-						container = container << (sizeof(float) * 8 - 25); //21 to 25
+						container = container << (sizeof(float) * 8 - 25);
 						vertexData.uliData |= container;
 
 						vertices.push_back(vertexData.floatData);
@@ -643,34 +627,28 @@ void world::generateChunkMesh(chunk& c) {
 						vertexData.uliData = 0;
 						container = 0;
 
-						//blockPosition.x
 						container = (blockVertices[j * 5] + blockPosition.x);
-						container = container << (sizeof(float) * 8 - 5); //first 5
+						container = container << (sizeof(float) * 8 - 5);
 						vertexData.uliData |= container;
 
-						//blockPosition.y
 						container = (blockVertices[j * 5 + 1] + blockPosition.y);
-						container = container << (sizeof(float) * 8 - 10); // 6 to 10
+						container = container << (sizeof(float) * 8 - 13);
 						vertexData.uliData |= container;
 
-						//blockPosition.z
 						container = (blockVertices[j * 5 + 2] + blockPosition.z);
-						container = container << (sizeof(float) * 8 - 18); // 11 to 18
+						container = container << (sizeof(float) * 8 - 18);
 						vertexData.uliData |= container;
 
-						//texture coordintae s
 						container = (blockVertices[j * 5 + 3]);
-						container = container << (sizeof(float) * 8 - 19); //19
+						container = container << (sizeof(float) * 8 - 19);
 						vertexData.uliData |= container;
 
-						//texture coordintae t
 						container = (blockVertices[j * 5 + 4]);
-						container = container << (sizeof(float) * 8 - 20); //20
+						container = container << (sizeof(float) * 8 - 20);
 						vertexData.uliData |= container;
 
-						//texture ID
 						container = static_cast<unsigned long int>(blockID);
-						container = container << (sizeof(float) * 8 - 25); //21 to 25
+						container = container << (sizeof(float) * 8 - 25);
 						vertexData.uliData |= container;
 
 						vertices.push_back(vertexData.floatData);
@@ -682,45 +660,34 @@ void world::generateChunkMesh(chunk& c) {
 						vertexData.uliData = 0;
 						container = 0;
 
-						//blockPosition.x
 						container = (blockVertices[j * 5] + blockPosition.x);
-						container = container << (sizeof(float) * 8 - 5); //first 5
+						container = container << (sizeof(float) * 8 - 5);
 						vertexData.uliData |= container;
 
-						//blockPosition.y
 						container = (blockVertices[j * 5 + 1] + blockPosition.y);
-						container = container << (sizeof(float) * 8 - 10); // 6 to 10
+						container = container << (sizeof(float) * 8 - 13);
 						vertexData.uliData |= container;
 
-						//blockPosition.z
 						container = (blockVertices[j * 5 + 2] + blockPosition.z);
-						container = container << (sizeof(float) * 8 - 18); // 11 to 18
+						container = container << (sizeof(float) * 8 - 18);
 						vertexData.uliData |= container;
 
-						//texture coordintae s
 						container = (blockVertices[j * 5 + 3]);
-						container = container << (sizeof(float) * 8 - 19); //19
+						container = container << (sizeof(float) * 8 - 19);
 						vertexData.uliData |= container;
 
-						//texture coordintae t
 						container = (blockVertices[j * 5 + 4]);
-						container = container << (sizeof(float) * 8 - 20); //20
+						container = container << (sizeof(float) * 8 - 20);
 						vertexData.uliData |= container;
 
-						//texture ID
 						container = static_cast<unsigned long int>(blockID);
-						container = container << (sizeof(float) * 8 - 25); //21 to 25
+						container = container << (sizeof(float) * 8 - 25);
 						vertexData.uliData |= container;
 
 						vertices.push_back(vertexData.floatData);
 					}
 					faceVertices += 6;
 				}
-
-				for (int k = 0; k < faceVertices; k++) {
-					indices.push_back(c.indexCount + k);
-				}
-
 				back = true;
 				front = true;
 				left = true;
@@ -731,28 +698,18 @@ void world::generateChunkMesh(chunk& c) {
 		}
 	}
 
-	c.indexCount = indices.size();
-
-	//to MUSI byc w glownym watku zeby OpenGL byl szczesliwy
-	glGenVertexArrays(1, &c.VAO);
-	glGenBuffers(1, &c.VBO);
-	glGenBuffers(1, &c.EBO);
-
+	//VAO for a draw command
+	glCreateVertexArrays(1, &c.VAO);
 	glBindVertexArray(c.VAO);
 
-	glBindBuffer(GL_ARRAY_BUFFER, c.VBO);
-	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
+	//SSBO holds compressed vertex data
+	glCreateBuffers(1, &c.SSBO);
+	glNamedBufferStorage(c.SSBO, vertices.size() * sizeof(float), vertices.data(), 0);
 
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, c.EBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
+	//bind point
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, c.SSBO);
 
-	//atrybut wszystkiego
-	glVertexAttribPointer(0, 1, GL_FLOAT, GL_FALSE, sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
-
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindVertexArray(0);
-
+	c.vertexCount = vertices.size();
 	c.needsUpdate = false;
 	c.notInFOV = false;
 }
@@ -765,15 +722,15 @@ void world::newChunk(int x, int y) {
 	newChunk->chunkY = y;
 	newChunk->needsUpdate = true;
 	newChunk->VAO = 0;
-	newChunk->VBO = 0;
+	newChunk->SSBO = 0;
 
 	//set block data
 	float perlinNoise[CHUNK_LENGTH * CHUNK_LENGTH]{};
 	perlinNoiseGenerator(x, y, perlinNoise, OCTAVES, PERSISTANCE);
 	for (uint8_t cx = 0; cx < CHUNK_LENGTH; cx++) {
 		for (uint8_t cy = 0; cy < CHUNK_LENGTH; cy++) {
-			//uint8_t height = (uint8_t)(((perlinNoise[get2dCoord(cx, cy)] + 1.5f) * 0.36f) * CHUNK_HEIGHT); //TO TRZEBA ZAKTUALIZOWAC DO GENERACJI Z OKTAWAMI
-			uint8_t height = (cx % 4 || cy % 4) ? 2 : 90;
+			uint8_t height = (uint8_t)(((perlinNoise[get2dCoord(cx, cy)] + 1.5f) * 0.36f) * CHUNK_HEIGHT); //TO TRZEBA ZAKTUALIZOWAC DO GENERACJI Z OKTAWAMI
+			//uint8_t height = (cx % 4 || cy % 4) ? 2 : 90;
 			
 			for (uint8_t cz = 0; cz <= height - 2; ++cz) {
 				newChunk->chunkBlockData[get3dCoord(cx, cy, cz)] = 2; //Stone
@@ -799,8 +756,7 @@ void world::deleteChunk(int x, int y) {
 	auto it = chunks.find({ x, y });
 	if (it != chunks.end()) {
 		glDeleteVertexArrays(1, &(it->second->VAO));
-		glDeleteBuffers(1, &(it->second->VBO));
-		glDeleteBuffers(1, &(it->second->EBO));
+		glDeleteBuffers(1, &(it->second->SSBO));
 		chunks.erase(it);
 	}
 	existingChunks.erase({ x, y });
