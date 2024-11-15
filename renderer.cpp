@@ -24,7 +24,7 @@ void renderer::render(unsigned int VAO) {
         setMat4("model", model);
 
         glBindVertexArray(chunk->VAO);
-        glDrawElements(GL_TRIANGLES, chunk->indexCount, GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_TRIANGLES, chunk->indexCount, GL_UNSIGNED_INT, nullptr);
         glBindVertexArray(0);
     }
 }

@@ -44,14 +44,6 @@ const int SCR_HEIGHT = 1080; //720
 const float FOV = 70.0f;
 const float TIMESTEP = 1.0f / 60.0f;
 
-/*bool running = true;
-void chunkGenerationThread(world& world) {
-    while (running) {
-        world.createChunks();
-        std::this_thread::sleep_for(std::chrono::milliseconds(50));
-    }
-}*/
-
 int main() {
     //glfw inicjalizacja
     glfwInit();
@@ -115,13 +107,13 @@ int main() {
         shaders.setInt("texturesArray[" + std::to_string(i) + "]", i);
     }
 
-    //std::cout << glGetUniformLocation(shaderProgram, "texturesArray[2]") << std::endl;
+    //std::cout << glGetUniformLocation(shaderProgram, "texturesArray[3]") << std::endl;
 
     //generacja ID vbo (obiektu buferowego wierzcholkow) i przypisanie typu
-    unsigned int VBO, VAO, EBO;
+    unsigned int SSBOv, SSBOi, VAO;
     glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-    glGenBuffers(1, &EBO);
+    glGenBuffers(1, &SSBOv);
+    glGenBuffers(1, &SSBOi);
 
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
@@ -234,7 +226,8 @@ int main() {
     //chunkThread.join();
 
     glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &VBO);
+    glDeleteBuffers(1, &SSBOv);
+    glDeleteBuffers(1, &SSBOi);
     glDeleteProgram(shaderProgram);
 
     glfwTerminate();

@@ -721,6 +721,8 @@ void world::generateChunkMesh(chunk& c) {
 					indices.push_back(c.indexCount + k);
 				}
 
+				c.indexCount += faceVertices;
+
 				back = true;
 				front = true;
 				left = true;
@@ -731,26 +733,23 @@ void world::generateChunkMesh(chunk& c) {
 		}
 	}
 
-	c.indexCount = indices.size();
-
-	//to MUSI byc w glownym watku zeby OpenGL byl szczesliwy
 	glGenVertexArrays(1, &c.VAO);
-	glGenBuffers(1, &c.VBO);
-	glGenBuffers(1, &c.EBO);
+	glGenBuffers(1, &c.SSBOv);
+	glGenBuffers(1, &c.SSBOi);
 
 	glBindVertexArray(c.VAO);
 
-	glBindBuffer(GL_ARRAY_BUFFER, c.VBO);
-	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, c.SSBOv);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
 
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, c.EBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
-
-	//atrybut wszystkiego
 	glVertexAttribPointer(0, 1, GL_FLOAT, GL_FALSE, sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
 
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, c.SSBOi);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
+
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 	glBindVertexArray(0);
 
 	c.needsUpdate = false;
@@ -765,7 +764,8 @@ void world::newChunk(int x, int y) {
 	newChunk->chunkY = y;
 	newChunk->needsUpdate = true;
 	newChunk->VAO = 0;
-	newChunk->VBO = 0;
+	newChunk->SSBOv = 0;
+	newChunk->SSBOi = 0;
 
 	//set block data
 	float perlinNoise[CHUNK_LENGTH * CHUNK_LENGTH]{};
@@ -799,8 +799,8 @@ void world::deleteChunk(int x, int y) {
 	auto it = chunks.find({ x, y });
 	if (it != chunks.end()) {
 		glDeleteVertexArrays(1, &(it->second->VAO));
-		glDeleteBuffers(1, &(it->second->VBO));
-		glDeleteBuffers(1, &(it->second->EBO));
+		glDeleteBuffers(1, &(it->second->SSBOv));
+		glDeleteBuffers(1, &(it->second->SSBOi));
 		chunks.erase(it);
 	}
 	existingChunks.erase({ x, y });

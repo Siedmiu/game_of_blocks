@@ -93,7 +93,7 @@ private:
 	struct chunk {
 		int chunkX{}, chunkY{};
 		uint8_t chunkBlockData[CHUNK_VOLUME]{};
-		unsigned int VAO{}, VBO{}, EBO{}, indexCount{};
+		unsigned int VAO{}, SSBOv{}, SSBOi{}, indexCount{};
 		bool needsUpdate = true, notInFOV = false;
 	};
 
