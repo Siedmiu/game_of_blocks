@@ -17,8 +17,8 @@ void main()
 	uint data = floatBitsToUint(compressedData);
 
 	uint x = (data >> 27) & 31u; // 5 bits
-    uint y = (data >> 22) & 31u; // 5 bits
-    uint z = (data >> 14) & 255u; // 8 bits
+    uint y = (data >> 19) & 255u; // 8 bits
+    uint z = (data >> 14) & 31u; // 5 bits
     uint texX = (data >> 13) & 1u; // 1 bit
     uint texY = (data >> 12) & 1u; // 1 bit
     uint texID = (data >> 7) & 31u; // 5 bits

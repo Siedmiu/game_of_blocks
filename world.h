@@ -21,7 +21,7 @@ const float CHUNK_LENGTH_RECIPROCAL = 1.0f / CHUNK_LENGTH;
 class world {
 private:
 	//WORLD SETTINGS
-	const unsigned short int RENDER_DISTANCE_CHUNKS = 1, BLOCK_SIZE = 1;
+	const unsigned short int RENDER_DISTANCE_CHUNKS = 10, BLOCK_SIZE = 1;
 	static const unsigned short int CHUNK_VOLUME = CHUNK_HEIGHT * CHUNK_LENGTH * CHUNK_LENGTH;
 
 	//GENERATION SETTINGS
@@ -38,51 +38,51 @@ private:
 	const float blockVertices[180] = {
 		//pos                //texture cords
 		0.0f, 0.0f, 0.0f,  0.0f, 0.0f,
-		1.0f,  1.0f, 0.0f,  1.0f, 1.0f,
+		1.0f, 1.0f, 0.0f,  1.0f, 1.0f,
 		1.0f, 0.0f, 0.0f,  1.0f, 0.0f,
-		1.0f,  1.0f, 0.0f,  1.0f, 1.0f,
+		1.0f, 1.0f, 0.0f,  1.0f, 1.0f,
 		0.0f, 0.0f, 0.0f,  0.0f, 0.0f,
-		0.0f,  1.0f, 0.0f,  0.0f, 1.0f,
+		0.0f, 1.0f, 0.0f,  0.0f, 1.0f,
 		// ^ back ^
 
-		0.0f, 0.0f,  1.0f,  0.0f, 0.0f,
-		1.0f, 0.0f,  1.0f,  1.0f, 0.0f,
-		1.0f,  1.0f,  1.0f,  1.0f, 1.0f,
-		1.0f,  1.0f,  1.0f,  1.0f, 1.0f,
-		0.0f,  1.0f,  1.0f,  0.0f, 1.0f,
-		0.0f, 0.0f,  1.0f,  0.0f, 0.0f,
+		0.0f, 0.0f, 1.0f,  0.0f, 0.0f,
+		1.0f, 0.0f, 1.0f,  1.0f, 0.0f,
+		1.0f, 1.0f, 1.0f,  1.0f, 1.0f,
+		1.0f, 1.0f, 1.0f,  1.0f, 1.0f,
+		0.0f, 1.0f, 1.0f,  0.0f, 1.0f,
+		0.0f, 0.0f, 1.0f,  0.0f, 0.0f,
 		// ^ front ^
 
-		0.0f,  1.0f,  1.0f,  1.0f, 0.0f,
-		0.0f,  1.0f, 0.0f,  1.0f, 1.0f,
+		0.0f, 1.0f, 1.0f,  1.0f, 0.0f,
+		0.0f, 1.0f, 0.0f,  1.0f, 1.0f,
 		0.0f, 0.0f, 0.0f,  0.0f, 1.0f,
 		0.0f, 0.0f, 0.0f,  0.0f, 1.0f,
-		0.0f, 0.0f,  1.0f,  0.0f, 0.0f,
-		0.0f,  1.0f,  1.0f,  1.0f, 0.0f,
+		0.0f, 0.0f, 1.0f,  0.0f, 0.0f,
+		0.0f, 1.0f, 1.0f,  1.0f, 0.0f,
 		// ^ left ^
 
-		1.0f,  1.0f,  1.0f,  1.0f, 0.0f,
+		1.0f, 1.0f, 1.0f,  1.0f, 0.0f,
 		1.0f, 0.0f, 0.0f,  0.0f, 1.0f,
-		1.0f,  1.0f, 0.0f,  1.0f, 1.0f,
+		1.0f, 1.0f, 0.0f,  1.0f, 1.0f,
 		1.0f, 0.0f, 0.0f,  0.0f, 1.0f,
-		1.0f,  1.0f,  1.0f,  1.0f, 0.0f,
-		1.0f, 0.0f,  1.0f,  0.0f, 0.0f,
+		1.0f, 1.0f, 1.0f,  1.0f, 0.0f,
+		1.0f, 0.0f, 1.0f,  0.0f, 0.0f,
 		// ^ right ^
 
 		0.0f, 0.0f, 0.0f,  0.0f, 1.0f,
 		1.0f, 0.0f, 0.0f,  1.0f, 1.0f,
-		1.0f, 0.0f,  1.0f,  1.0f, 0.0f,
-		1.0f, 0.0f,  1.0f,  1.0f, 0.0f,
-		0.0f, 0.0f,  1.0f,  0.0f, 0.0f,
+		1.0f, 0.0f, 1.0f,  1.0f, 0.0f,
+		1.0f, 0.0f, 1.0f,  1.0f, 0.0f,
+		0.0f, 0.0f, 1.0f,  0.0f, 0.0f,
 		0.0f, 0.0f, 0.0f,  0.0f, 1.0f,
 		// ^ bottom ^
 
-		0.0f,  1.0f, 0.0f,  0.0f, 1.0f,
-		1.0f,  1.0f,  1.0f,  1.0f, 0.0f,
-		1.0f,  1.0f, 0.0f,  1.0f, 1.0f,
-		1.0f,  1.0f,  1.0f,  1.0f, 0.0f,
-		0.0f,  1.0f, 0.0f,  0.0f, 1.0f,
-		0.0f,  1.0f,  1.0f,  0.0f, 0.0f
+		0.0f, 1.0f, 0.0f,  0.0f, 1.0f,
+		1.0f, 1.0f, 1.0f,  1.0f, 0.0f,
+		1.0f, 1.0f, 0.0f,  1.0f, 1.0f,
+		1.0f, 1.0f, 1.0f,  1.0f, 0.0f,
+		0.0f, 1.0f, 0.0f,  0.0f, 1.0f,
+		0.0f, 1.0f, 1.0f,  0.0f, 0.0f
 		// ^ top ^
 	};
 	const unsigned int indices[6] = {

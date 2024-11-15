@@ -79,7 +79,7 @@ int main() {
     //OPENGL------------------------------------------------------------------------
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
-    glEnable(GL_MULTISAMPLE);
+    //glEnable(GL_MULTISAMPLE);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -201,7 +201,7 @@ int main() {
             }*/
 
             //Colision detection
-            world.sweptAABBcolisonCheck();
+            //world.sweptAABBcolisonCheck();
             
             //handle velocity, air resistance, friction and gravity
             player.movePlayer(TIMESTEP);
