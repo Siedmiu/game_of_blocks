@@ -1,5 +1,8 @@
-#version 330 core
-layout (location = 0) in float vertexData;
+#version 430 core
+
+layout(std430, binding = 0) buffer VertexDataBuffer {
+    float compressed[];
+};
 
 out vec2 TexCoord;
 out float TexID;
@@ -10,7 +13,8 @@ uniform mat4 projection;
 
 void main()
 {
-	uint data = floatBitsToUint(vertexData);
+	float compressedData = compressed[gl_VertexID];
+	uint data = floatBitsToUint(compressedData);
 
 	uint x = (data >> 27) & 31u; // 5 bits
     uint y = (data >> 22) & 31u; // 5 bits

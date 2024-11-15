@@ -110,10 +110,9 @@ int main() {
     //std::cout << glGetUniformLocation(shaderProgram, "texturesArray[3]") << std::endl;
 
     //generacja ID vbo (obiektu buferowego wierzcholkow) i przypisanie typu
-    unsigned int SSBOv, SSBOi, VAO;
+    unsigned int SSBO, VAO;
     glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &SSBOv);
-    glGenBuffers(1, &SSBOi);
+    glGenBuffers(1, &SSBO);
 
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
@@ -226,8 +225,7 @@ int main() {
     //chunkThread.join();
 
     glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &SSBOv);
-    glDeleteBuffers(1, &SSBOi);
+    glDeleteBuffers(1, &SSBO);
     glDeleteProgram(shaderProgram);
 
     glfwTerminate();

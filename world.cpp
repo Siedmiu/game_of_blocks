@@ -426,8 +426,6 @@ void world::createChunks() {
 //nie da sie sprawdzic chunkow obok jak jeszcze nie istnieja, poprawic dla nowego generatora szumu
 void world::generateChunkMesh(chunk& c) {
 	std::vector<float> vertices;
-	std::vector<unsigned int> indices;
-	c.indexCount = 0;
 	glm::vec3 blockPosition;
 	uint8_t blockID;
 	bool back = true, front = true, left = true, right = true, bottom = true, top = true;
@@ -717,12 +715,6 @@ void world::generateChunkMesh(chunk& c) {
 					faceVertices += 6;
 				}
 
-				for (int k = 0; k < faceVertices; k++) {
-					indices.push_back(c.indexCount + k);
-				}
-
-				c.indexCount += faceVertices;
-
 				back = true;
 				front = true;
 				left = true;
@@ -733,25 +725,18 @@ void world::generateChunkMesh(chunk& c) {
 		}
 	}
 
-	glGenVertexArrays(1, &c.VAO);
-	glGenBuffers(1, &c.SSBOv);
-	glGenBuffers(1, &c.SSBOi);
-
+	//VAO for a draw command
+	glCreateVertexArrays(1, &c.VAO);
 	glBindVertexArray(c.VAO);
 
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, c.SSBOv);
-	glBufferData(GL_SHADER_STORAGE_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
+	//SSBO holds compressed vertex data
+	glCreateBuffers(1, &c.SSBO);
+	glNamedBufferStorage(c.SSBO, vertices.size() * sizeof(float), vertices.data(), 0);
 
-	glVertexAttribPointer(0, 1, GL_FLOAT, GL_FALSE, sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
+	//bind point
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, c.SSBO);
 
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, c.SSBOi);
-	glBufferData(GL_SHADER_STORAGE_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
-
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-	glBindVertexArray(0);
-
+	c.vertexCount = vertices.size();
 	c.needsUpdate = false;
 	c.notInFOV = false;
 }
@@ -764,8 +749,7 @@ void world::newChunk(int x, int y) {
 	newChunk->chunkY = y;
 	newChunk->needsUpdate = true;
 	newChunk->VAO = 0;
-	newChunk->SSBOv = 0;
-	newChunk->SSBOi = 0;
+	newChunk->SSBO = 0;
 
 	//set block data
 	float perlinNoise[CHUNK_LENGTH * CHUNK_LENGTH]{};
@@ -799,8 +783,7 @@ void world::deleteChunk(int x, int y) {
 	auto it = chunks.find({ x, y });
 	if (it != chunks.end()) {
 		glDeleteVertexArrays(1, &(it->second->VAO));
-		glDeleteBuffers(1, &(it->second->SSBOv));
-		glDeleteBuffers(1, &(it->second->SSBOi));
+		glDeleteBuffers(1, &(it->second->SSBO));
 		chunks.erase(it);
 	}
 	existingChunks.erase({ x, y });

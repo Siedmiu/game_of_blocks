@@ -92,9 +92,11 @@ private:
 
 	struct chunk {
 		int chunkX{}, chunkY{};
-		uint8_t chunkBlockData[CHUNK_VOLUME]{};
-		unsigned int VAO{}, SSBOv{}, SSBOi{}, indexCount{};
+		unsigned int VAO{}, SSBO{};
+		unsigned int vertexCount = 0;
 		bool needsUpdate = true, notInFOV = false;
+		//2 bytes of free space here
+		uint8_t chunkBlockData[CHUNK_VOLUME]{};
 	};
 
 	struct pairHash {
