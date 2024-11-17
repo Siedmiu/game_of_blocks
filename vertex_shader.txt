@@ -4,7 +4,8 @@ layout(std430, binding = 0) buffer VertexDataBuffer {
     float compressed[];
 };
 
-out vec2 TexCoord;
+//out vec2 TexCoord;
+flat out int faceDirection;
 flat out int TexID;
 
 uniform mat4 model;
@@ -19,9 +20,10 @@ void main()
 	uint x = (data >> 27) & 31u; // 5 bits
     uint y = (data >> 19) & 255u; // 8 bits
     uint z = (data >> 14) & 31u; // 5 bits
-    uint texX = (data >> 13) & 1u; // 1 bit
-    uint texY = (data >> 12) & 1u; // 1 bit
-    uint texID = (data >> 7) & 31u; // 5 bits
+    //uint texX = (data >> 13) & 1u; // 1 bit
+    //uint texY = (data >> 12) & 1u; // 1 bit
+    uint texID = (data >> 9) & 31u; // 5 bits
+	uint faceDirection = (data >> 6) & 7u //3 bits
 
 	vec3 Pos = vec3(float(x), float(y), float(z));
 

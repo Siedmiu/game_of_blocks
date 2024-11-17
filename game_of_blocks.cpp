@@ -4,14 +4,12 @@
 //https://gamedev.net/tutorials/programming/general-and-gameplay-programming/swept-aabb-collision-detection-and-response-r3084/
 
 //do zrobienia
-// naprawic tekstury
 // kolizja i chodzenie
 // z pre pass
 // Shaders
 // 
 // moze:
 // naprawic oktawy
-// wielowatkowy generator
 //
 
 //block id

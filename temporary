@@ -1,0 +1,38 @@
+if (back) {
+					for (int j = 0; j < 4; j++) {
+						vertexData.uliData = 0;
+						container = 0;
+
+						//blockPosition.x
+						container = (blockVertices[j * 5] + blockPosition.x);
+						container = container << (sizeof(float) * 8 - 5); //first 5
+						vertexData.uliData |= container;
+
+						//blockPosition.y is height
+						container = (blockVertices[j * 5 + 1] + blockPosition.y);
+						container = container << (sizeof(float) * 8 - 5 - 8); //6 to 13
+						vertexData.uliData |= container;
+
+						//blockPosition.z
+						container = (blockVertices[j * 5 + 2] + blockPosition.z);
+						container = container << (sizeof(float) * 8 - 5 - 8 - 5); // 14 to 18
+						vertexData.uliData |= container;
+
+						//texture coordintae s
+						container = (blockVertices[j * 5 + 3]);
+						container = container << (sizeof(float) * 8 - 5 - 8 - 5 - 1); //19
+						vertexData.uliData |= container;
+
+						//texture coordintae t
+						container = (blockVertices[j * 5 + 4]);
+						container = container << (sizeof(float) * 8 - 5 - 8 - 5 - 1 - 1); //20
+						vertexData.uliData |= container;
+
+						//texture ID
+						container = static_cast<unsigned long int>(blockID);
+						container = container << (sizeof(float) * 8 - 5 - 8 - 5 - 1 - 1 - 5); //21 to 25
+						vertexData.uliData |= container;
+
+						vertices.push_back(vertexData.floatData);
+					}
+				}

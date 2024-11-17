@@ -29,66 +29,61 @@ private:
 	const unsigned int OCTAVES = 1;
 	const float PERSISTANCE = 0.5f;
 
+	//BLOCKS
+	const uint8_t FACE_DIRECTION_BACK = 0, FACE_DIRECTION_FRONT = 1, FACE_DIRECTION_LEFT = 2, 
+				  FACE_DIRECTION_RIGHT = 3, FACE_DIRECTION_BOTTOM = 4, FACE_DIRECTION_TOP = 5;
+
+
+	const float blockVertices[120] = {
+		//pos             //texture cords
+		0.0f, 0.0f, 0.0f,  0.0f, 0.0f,  // 0: bottom-left
+		1.0f, 0.0f, 0.0f,  1.0f, 0.0f,  // 1: bottom-right
+		1.0f, 1.0f, 0.0f,  1.0f, 1.0f,  // 2: top-right
+		0.0f, 1.0f, 0.0f,  0.0f, 1.0f,  // 3: top-left
+		// ^ back ^
+
+		0.0f, 0.0f, 1.0f,  0.0f, 0.0f,  // 4: bottom-left
+		1.0f, 0.0f, 1.0f,  1.0f, 0.0f,  // 5: bottom-right
+		1.0f, 1.0f, 1.0f,  1.0f, 1.0f,  // 6: top-right
+		0.0f, 1.0f, 1.0f,  0.0f, 1.0f,  // 7: top-left
+		// ^ front ^
+
+		0.0f, 0.0f, 1.0f,  0.0f, 0.0f,  // 8: bottom-front
+		0.0f, 0.0f, 0.0f,  1.0f, 0.0f,  // 9: bottom-back
+		0.0f, 1.0f, 0.0f,  1.0f, 1.0f,  // 10: top-back
+		0.0f, 1.0f, 1.0f,  0.0f, 1.0f,  // 11: top-front
+		// ^ left ^
+
+		1.0f, 0.0f, 1.0f,  0.0f, 0.0f,  // 12: bottom-front
+		1.0f, 0.0f, 0.0f,  1.0f, 0.0f,  // 13: bottom-back
+		1.0f, 1.0f, 0.0f,  1.0f, 1.0f,  // 14: top-back
+		1.0f, 1.0f, 1.0f,  0.0f, 1.0f,  // 15: top-front
+		// ^ right ^
+
+		0.0f, 0.0f, 0.0f,  0.0f, 1.0f,  // 16: back-left
+		1.0f, 0.0f, 0.0f,  1.0f, 1.0f,  // 17: back-right
+		1.0f, 0.0f, 1.0f,  1.0f, 0.0f,  // 18: front-right
+		0.0f, 0.0f, 1.0f,  0.0f, 0.0f,  // 19: front-left
+		// ^ bottom ^
+
+		0.0f, 1.0f, 0.0f,  0.0f, 1.0f,  // 20: back-left
+		1.0f, 1.0f, 0.0f,  1.0f, 1.0f,  // 21: back-right
+		1.0f, 1.0f, 1.0f,  1.0f, 0.0f,  // 22: front-right
+		0.0f, 1.0f, 1.0f,  0.0f, 0.0f   // 23: front-left
+		// ^ top ^
+	};
+	/*
+	const unsigned int indices[6] = {
+	0, 1, 3,   //first triangle
+	1, 2, 3    //second triangle
+	};*/
+
+	//player data
 	int playerChunkX = 0, playerChunkY = 0, lastPlayerChunkX = 1, lastPlayerChunkY = 1;
 	glm::vec3 playerPosition{}, playerVelocity{};
 
 	player& playerOne;
 	camera& cam;
-
-	const float blockVertices[180] = {
-		//pos                //texture cords
-		0.0f, 0.0f, 0.0f,  0.0f, 0.0f,
-		1.0f, 1.0f, 0.0f,  1.0f, 1.0f,
-		1.0f, 0.0f, 0.0f,  1.0f, 0.0f,
-		1.0f, 1.0f, 0.0f,  1.0f, 1.0f,
-		0.0f, 0.0f, 0.0f,  0.0f, 0.0f,
-		0.0f, 1.0f, 0.0f,  0.0f, 1.0f,
-		// ^ back ^
-
-		0.0f, 0.0f, 1.0f,  0.0f, 0.0f,
-		1.0f, 0.0f, 1.0f,  1.0f, 0.0f,
-		1.0f, 1.0f, 1.0f,  1.0f, 1.0f,
-		1.0f, 1.0f, 1.0f,  1.0f, 1.0f,
-		0.0f, 1.0f, 1.0f,  0.0f, 1.0f,
-		0.0f, 0.0f, 1.0f,  0.0f, 0.0f,
-		// ^ front ^
-
-		0.0f, 1.0f, 1.0f,  1.0f, 0.0f,
-		0.0f, 1.0f, 0.0f,  1.0f, 1.0f,
-		0.0f, 0.0f, 0.0f,  0.0f, 1.0f,
-		0.0f, 0.0f, 0.0f,  0.0f, 1.0f,
-		0.0f, 0.0f, 1.0f,  0.0f, 0.0f,
-		0.0f, 1.0f, 1.0f,  1.0f, 0.0f,
-		// ^ left ^
-
-		1.0f, 1.0f, 1.0f,  1.0f, 0.0f,
-		1.0f, 0.0f, 0.0f,  0.0f, 1.0f,
-		1.0f, 1.0f, 0.0f,  1.0f, 1.0f,
-		1.0f, 0.0f, 0.0f,  0.0f, 1.0f,
-		1.0f, 1.0f, 1.0f,  1.0f, 0.0f,
-		1.0f, 0.0f, 1.0f,  0.0f, 0.0f,
-		// ^ right ^
-
-		0.0f, 0.0f, 0.0f,  0.0f, 1.0f,
-		1.0f, 0.0f, 0.0f,  1.0f, 1.0f,
-		1.0f, 0.0f, 1.0f,  1.0f, 0.0f,
-		1.0f, 0.0f, 1.0f,  1.0f, 0.0f,
-		0.0f, 0.0f, 1.0f,  0.0f, 0.0f,
-		0.0f, 0.0f, 0.0f,  0.0f, 1.0f,
-		// ^ bottom ^
-
-		0.0f, 1.0f, 0.0f,  0.0f, 1.0f,
-		1.0f, 1.0f, 1.0f,  1.0f, 0.0f,
-		1.0f, 1.0f, 0.0f,  1.0f, 1.0f,
-		1.0f, 1.0f, 1.0f,  1.0f, 0.0f,
-		0.0f, 1.0f, 0.0f,  0.0f, 1.0f,
-		0.0f, 1.0f, 1.0f,  0.0f, 0.0f
-		// ^ top ^
-	};
-	const unsigned int indices[6] = {
-	0, 1, 3,   //first triangle
-	1, 2, 3    //second triangle
-	};
 
 	struct chunk {
 		int chunkX{}, chunkY{};

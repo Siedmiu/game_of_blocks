@@ -461,9 +461,9 @@ void world::generateChunkMesh(chunk& c) {
 				};
 
 				//store 6 floats in 1 float
-				//5 bits for x; 5 bits for y; 8 bits for z; 1 bit for TexID.x; 1 bit for TexID.y; 5 bit for texID; 25 bits total, 7 unoccupied
-				//max x,y = 31; max z = 255; max t,s = 1; max texID = 32
-				//0b 00000 00000000 00000 0 0 00000 -------
+				//5 bits for x; 5 bits for y; 8 bits for z; 5 bit for texID; 3 bits for faceDirection; 26 bits total, 6 unoccupied
+				//max x,y = 32; max z = 256; max texID = 32, max faceDirection = 8 (6 needed);
+				//0b 00000 00000000 00000 00000 000 ------
 				//
 				union floatToUli {
 					float floatData;
@@ -472,221 +472,184 @@ void world::generateChunkMesh(chunk& c) {
 				floatToUli vertexData{};
 				unsigned long int container{}; //same bit length as a float
 
-				int faceVertices = 0;
 				if (back) {
-					for (int j = 0; j < 6; j++) {
-						vertexData.uliData = 0;
-						container = 0;
+					vertexData.uliData = 0;
+					container = 0;
 
-						//blockPosition.x
-						container = (blockVertices[j * 5] + blockPosition.x);
-						container = container << (sizeof(float) * 8 - 5); //first 5
-						vertexData.uliData |= container;
+					//blockPosition.x
+					container = blockPosition.x;
+					container = container << (sizeof(float) * 8 - 5); //first 5
+					vertexData.uliData |= container;
 
-						//blockPosition.y is height
-						container = (blockVertices[j * 5 + 1] + blockPosition.y);
-						container = container << (sizeof(float) * 8 - 5 - 8); //6 to 13
-						vertexData.uliData |= container;
+					//blockPosition.y is height
+					container = blockPosition.y;
+					container = container << (sizeof(float) * 8 - 5 - 8); //6 to 13
+					vertexData.uliData |= container;
 
-						//blockPosition.z
-						container = (blockVertices[j * 5 + 2] + blockPosition.z);
-						container = container << (sizeof(float) * 8 - 5 - 8 - 5); // 14 to 18
-						vertexData.uliData |= container;
+					//blockPosition.z
+					container = blockPosition.z;
+					container = container << (sizeof(float) * 8 - 5 - 8 - 5); // 14 to 18
+					vertexData.uliData |= container;
 
-						//texture coordintae s
-						container = (blockVertices[j * 5 + 3]);
-						container = container << (sizeof(float) * 8 - 5 - 8 - 5 - 1); //19
-						vertexData.uliData |= container;
+					//! not needed?
+					/*
+					//texture coordintae s
+					container = (1);
+					container = container << (sizeof(float) * 8 - 5 - 8 - 5 - 1); //19
+					vertexData.uliData |= container;
 
-						//texture coordintae t
-						container = (blockVertices[j * 5 + 4]);
-						container = container << (sizeof(float) * 8 - 5 - 8 - 5 - 1 - 1); //20
-						vertexData.uliData |= container;
+					//texture coordintae t
+					container = (1);
+					container = container << (sizeof(float) * 8 - 5 - 8 - 5 - 1 - 1); //20
+					vertexData.uliData |= container;
+					*/
 
-						//texture ID
-						container = static_cast<unsigned long int>(blockID);
-						container = container << (sizeof(float) * 8 - 5 - 8 - 5 - 1 - 1 - 5); //21 to 25
-						vertexData.uliData |= container;
+					//texture ID
+					container = static_cast<unsigned long int>(blockID);
+					container = container << (sizeof(float) * 8 - 5 - 8 - 5 - 5); //19 to 23
+					vertexData.uliData |= container;
 
-						vertices.push_back(vertexData.floatData);
+					//face Direction
+					container = static_cast<unsigned long int>(FACE_DIRECTION_BACK);
+					container = container << (sizeof(float) * 8 - 5 - 8 - 5 - 5 - 3); //24 to 26
+					vertexData.uliData |= container;
 
-						/*
-						unsigned long int data = vertexData.uliData;
-
-						unsigned long int x = (data >> 27) & 31u; // 5 bits
-						unsigned long int y = (data >> 22) & 31u; // 5 bits
-						unsigned long int z = (data >> 14) & 255u; // 8 bits
-						unsigned long int texX = (data >> 13) & 1u; // 1 bit
-						unsigned long int texY = (data >> 12) & 1u; // 1 bit
-						unsigned long int texID = (data >> 7) & 31u; // 5 bits
-						*/
-					}
-					faceVertices += 6;
+					vertices.push_back(vertexData.floatData);
 				}
 				if (front) {
-					for (int j = 6; j < 12; j++) {
-						vertexData.uliData = 0;
-						container = 0;
+					vertexData.uliData = 0;
+					container = 0;
 
-						container = (blockVertices[j * 5] + blockPosition.x);
-						container = container << (sizeof(float) * 8 - 5);
-						vertexData.uliData |= container;
+					container = blockPosition.x;
+					container = container << (sizeof(float) * 8 - 5);
+					vertexData.uliData |= container;
 
-						container = (blockVertices[j * 5 + 1] + blockPosition.y);
-						container = container << (sizeof(float) * 8 - 13);
-						vertexData.uliData |= container;
+					container = blockPosition.y;
+					container = container << (sizeof(float) * 8 - 13);
+					vertexData.uliData |= container;
 
-						container = (blockVertices[j * 5 + 2] + blockPosition.z);
-						container = container << (sizeof(float) * 8 - 18);
-						vertexData.uliData |= container;
+					container = blockPosition.z;
+					container = container << (sizeof(float) * 8 - 18);
+					vertexData.uliData |= container;
 
-						container = (blockVertices[j * 5 + 3]);
-						container = container << (sizeof(float) * 8 - 19);
-						vertexData.uliData |= container;
+					container = static_cast<unsigned long int>(blockID);
+					container = container << (sizeof(float) * 8 - 23);
+					vertexData.uliData |= container;
 
-						container = (blockVertices[j * 5 + 4]);
-						container = container << (sizeof(float) * 8 - 20);
-						vertexData.uliData |= container;
+					//face Direction
+					container = static_cast<unsigned long int>(FACE_DIRECTION_FRONT);
+					container = container << (sizeof(float) * 8 - 26);
+					vertexData.uliData |= container;
 
-						container = static_cast<unsigned long int>(blockID);
-						container = container << (sizeof(float) * 8 - 25);
-						vertexData.uliData |= container;
-
-						vertices.push_back(vertexData.floatData);
-					}
-					faceVertices += 6;
+					vertices.push_back(vertexData.floatData);
 				}
 				if (left) {
-					for (int j = 12; j < 18; j++) {
-						vertexData.uliData = 0;
-						container = 0;
+					vertexData.uliData = 0;
+					container = 0;
 
-						container = (blockVertices[j * 5] + blockPosition.x);
-						container = container << (sizeof(float) * 8 - 5);
-						vertexData.uliData |= container;
+					container = blockPosition.x;
+					container = container << (sizeof(float) * 8 - 5);
+					vertexData.uliData |= container;
 
-						container = (blockVertices[j * 5 + 1] + blockPosition.y);
-						container = container << (sizeof(float) * 8 - 13);
-						vertexData.uliData |= container;
+					container = blockPosition.y;
+					container = container << (sizeof(float) * 8 - 13);
+					vertexData.uliData |= container;
 
-						container = (blockVertices[j * 5 + 2] + blockPosition.z);
-						container = container << (sizeof(float) * 8 - 18);
-						vertexData.uliData |= container;
+					container = blockPosition.z;
+					container = container << (sizeof(float) * 8 - 18);
+					vertexData.uliData |= container;
 
-						container = (blockVertices[j * 5 + 3]);
-						container = container << (sizeof(float) * 8 - 19);
-						vertexData.uliData |= container;
+					container = static_cast<unsigned long int>(blockID);
+					container = container << (sizeof(float) * 8 - 23);
+					vertexData.uliData |= container;
 
-						container = (blockVertices[j * 5 + 4]);
-						container = container << (sizeof(float) * 8 - 20);
-						vertexData.uliData |= container;
+					//face Direction
+					container = static_cast<unsigned long int>(FACE_DIRECTION_LEFT);
+					container = container << (sizeof(float) * 8 - 26);
+					vertexData.uliData |= container;
 
-						container = static_cast<unsigned long int>(blockID);
-						container = container << (sizeof(float) * 8 - 25);
-						vertexData.uliData |= container;
-
-						vertices.push_back(vertexData.floatData);
-					}
-					faceVertices += 6;
+					vertices.push_back(vertexData.floatData);
 				}
 				if (right) {
-					for (int j = 18; j < 24; j++) {
-						vertexData.uliData = 0;
-						container = 0;
+					vertexData.uliData = 0;
+					container = 0;
 
-						container = (blockVertices[j * 5] + blockPosition.x);
-						container = container << (sizeof(float) * 8 - 5);
-						vertexData.uliData |= container;
+					container = blockPosition.x;
+					container = container << (sizeof(float) * 8 - 5);
+					vertexData.uliData |= container;
 
-						container = (blockVertices[j * 5 + 1] + blockPosition.y);
-						container = container << (sizeof(float) * 8 - 13);
-						vertexData.uliData |= container;
+					container = blockPosition.y;
+					container = container << (sizeof(float) * 8 - 13);
+					vertexData.uliData |= container;
 
-						container = (blockVertices[j * 5 + 2] + blockPosition.z);
-						container = container << (sizeof(float) * 8 - 18);
-						vertexData.uliData |= container;
+					container = blockPosition.z;
+					container = container << (sizeof(float) * 8 - 18);
+					vertexData.uliData |= container;
 
-						container = (blockVertices[j * 5 + 3]);
-						container = container << (sizeof(float) * 8 - 19);
-						vertexData.uliData |= container;
+					container = static_cast<unsigned long int>(blockID);
+					container = container << (sizeof(float) * 8 - 23);
+					vertexData.uliData |= container;
 
-						container = (blockVertices[j * 5 + 4]);
-						container = container << (sizeof(float) * 8 - 20);
-						vertexData.uliData |= container;
+					//face Direction
+					container = static_cast<unsigned long int>(FACE_DIRECTION_RIGHT);
+					container = container << (sizeof(float) * 8 - 26);
+					vertexData.uliData |= container;
 
-						container = static_cast<unsigned long int>(blockID);
-						container = container << (sizeof(float) * 8 - 25);
-						vertexData.uliData |= container;
-
-						vertices.push_back(vertexData.floatData);
-					}
-					faceVertices += 6;
+					vertices.push_back(vertexData.floatData);
 				}
 				if (bottom) {
-					for (int j = 24; j < 30; j++) {
-						vertexData.uliData = 0;
-						container = 0;
+					vertexData.uliData = 0;
+					container = 0;
 
-						container = (blockVertices[j * 5] + blockPosition.x);
-						container = container << (sizeof(float) * 8 - 5);
-						vertexData.uliData |= container;
+					container = blockPosition.x;
+					container = container << (sizeof(float) * 8 - 5);
+					vertexData.uliData |= container;
 
-						container = (blockVertices[j * 5 + 1] + blockPosition.y);
-						container = container << (sizeof(float) * 8 - 13);
-						vertexData.uliData |= container;
+					container = blockPosition.y;
+					container = container << (sizeof(float) * 8 - 13);
+					vertexData.uliData |= container;
 
-						container = (blockVertices[j * 5 + 2] + blockPosition.z);
-						container = container << (sizeof(float) * 8 - 18);
-						vertexData.uliData |= container;
+					container = blockPosition.z;
+					container = container << (sizeof(float) * 8 - 18);
+					vertexData.uliData |= container;
 
-						container = (blockVertices[j * 5 + 3]);
-						container = container << (sizeof(float) * 8 - 19);
-						vertexData.uliData |= container;
+					container = static_cast<unsigned long int>(blockID);
+					container = container << (sizeof(float) * 8 - 23);
+					vertexData.uliData |= container;
 
-						container = (blockVertices[j * 5 + 4]);
-						container = container << (sizeof(float) * 8 - 20);
-						vertexData.uliData |= container;
+					//face Direction
+					container = static_cast<unsigned long int>(FACE_DIRECTION_BOTTOM);
+					container = container << (sizeof(float) * 8 - 26);
+					vertexData.uliData |= container;
 
-						container = static_cast<unsigned long int>(blockID);
-						container = container << (sizeof(float) * 8 - 25);
-						vertexData.uliData |= container;
-
-						vertices.push_back(vertexData.floatData);
-					}
-					faceVertices += 6;
+					vertices.push_back(vertexData.floatData);
 				}
 				if (top) {
-					for (int j = 30; j < 36; j++) {
-						vertexData.uliData = 0;
-						container = 0;
+					vertexData.uliData = 0;
+					container = 0;
 
-						container = (blockVertices[j * 5] + blockPosition.x);
-						container = container << (sizeof(float) * 8 - 5);
-						vertexData.uliData |= container;
+					container = blockPosition.x;
+					container = container << (sizeof(float) * 8 - 5);
+					vertexData.uliData |= container;
 
-						container = (blockVertices[j * 5 + 1] + blockPosition.y);
-						container = container << (sizeof(float) * 8 - 13);
-						vertexData.uliData |= container;
+					container = blockPosition.y;
+					container = container << (sizeof(float) * 8 - 13);
+					vertexData.uliData |= container;
 
-						container = (blockVertices[j * 5 + 2] + blockPosition.z);
-						container = container << (sizeof(float) * 8 - 18);
-						vertexData.uliData |= container;
+					container = blockPosition.z;
+					container = container << (sizeof(float) * 8 - 18);
+					vertexData.uliData |= container;
 
-						container = (blockVertices[j * 5 + 3]);
-						container = container << (sizeof(float) * 8 - 19);
-						vertexData.uliData |= container;
+					container = static_cast<unsigned long int>(blockID);
+					container = container << (sizeof(float) * 8 - 23);
+					vertexData.uliData |= container;
 
-						container = (blockVertices[j * 5 + 4]);
-						container = container << (sizeof(float) * 8 - 20);
-						vertexData.uliData |= container;
+					//face Direction
+					container = static_cast<unsigned long int>(FACE_DIRECTION_TOP);
+					container = container << (sizeof(float) * 8 - 26);
+					vertexData.uliData |= container;
 
-						container = static_cast<unsigned long int>(blockID);
-						container = container << (sizeof(float) * 8 - 25);
-						vertexData.uliData |= container;
-
-						vertices.push_back(vertexData.floatData);
-					}
-					faceVertices += 6;
+					vertices.push_back(vertexData.floatData);
 				}
 				back = true;
 				front = true;

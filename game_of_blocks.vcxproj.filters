@@ -85,5 +85,9 @@
     <Text Include="chrono.txt" />
     <Text Include="vertex_shader.txt" />
     <Text Include="fragment_shader.txt" />
+    <Text Include="geometry_shader.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="temporary" />
   </ItemGroup>
 </Project>
