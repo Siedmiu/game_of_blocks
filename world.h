@@ -36,40 +36,40 @@ private:
 
 	const float blockVertices[120] = {
 		//pos             //texture cords
-		0.0f, 0.0f, 0.0f,  0.0f, 0.0f,  // 0: bottom-left
-		1.0f, 0.0f, 0.0f,  1.0f, 0.0f,  // 1: bottom-right
-		1.0f, 1.0f, 0.0f,  1.0f, 1.0f,  // 2: top-right
-		0.0f, 1.0f, 0.0f,  0.0f, 1.0f,  // 3: top-left
+		1.0f, 0.0f, 0.0f,  1.0f, 0.0f,  //bottom-right
+		0.0f, 0.0f, 0.0f,  0.0f, 0.0f,  //bottom-left
+		1.0f, 1.0f, 0.0f,  1.0f, 1.0f,  //top-right
+		0.0f, 1.0f, 0.0f,  0.0f, 1.0f,  //top-left
 		// ^ back ^
 
-		0.0f, 0.0f, 1.0f,  0.0f, 0.0f,  // 4: bottom-left
-		1.0f, 0.0f, 1.0f,  1.0f, 0.0f,  // 5: bottom-right
-		1.0f, 1.0f, 1.0f,  1.0f, 1.0f,  // 6: top-right
-		0.0f, 1.0f, 1.0f,  0.0f, 1.0f,  // 7: top-left
+		0.0f, 0.0f, 1.0f,  0.0f, 0.0f,  //bottom-left
+		1.0f, 0.0f, 1.0f,  1.0f, 0.0f,  //bottom-right
+		0.0f, 1.0f, 1.0f,  0.0f, 1.0f,  //top-left
+		1.0f, 1.0f, 1.0f,  1.0f, 1.0f,  //top-right
 		// ^ front ^
-
-		0.0f, 0.0f, 1.0f,  0.0f, 0.0f,  // 8: bottom-front
-		0.0f, 0.0f, 0.0f,  1.0f, 0.0f,  // 9: bottom-back
-		0.0f, 1.0f, 0.0f,  1.0f, 1.0f,  // 10: top-back
-		0.0f, 1.0f, 1.0f,  0.0f, 1.0f,  // 11: top-front
+		
+		0.0f, 0.0f, 0.0f,  1.0f, 0.0f,  //bottom-back
+		0.0f, 0.0f, 1.0f,  0.0f, 0.0f,  //bottom-front
+		0.0f, 1.0f, 0.0f,  1.0f, 1.0f,  //top-back
+		0.0f, 1.0f, 1.0f,  0.0f, 1.0f,  //top-front
 		// ^ left ^
 
-		1.0f, 0.0f, 1.0f,  0.0f, 0.0f,  // 12: bottom-front
-		1.0f, 0.0f, 0.0f,  1.0f, 0.0f,  // 13: bottom-back
-		1.0f, 1.0f, 0.0f,  1.0f, 1.0f,  // 14: top-back
-		1.0f, 1.0f, 1.0f,  0.0f, 1.0f,  // 15: top-front
+		1.0f, 0.0f, 1.0f,  0.0f, 0.0f,  //bottom-front
+		1.0f, 0.0f, 0.0f,  1.0f, 0.0f,  //bottom-back
+		1.0f, 1.0f, 1.0f,  0.0f, 1.0f,  //top-front
+		1.0f, 1.0f, 0.0f,  1.0f, 1.0f,  //top-back
 		// ^ right ^
 
-		0.0f, 0.0f, 0.0f,  0.0f, 1.0f,  // 16: back-left
-		1.0f, 0.0f, 0.0f,  1.0f, 1.0f,  // 17: back-right
-		1.0f, 0.0f, 1.0f,  1.0f, 0.0f,  // 18: front-right
-		0.0f, 0.0f, 1.0f,  0.0f, 0.0f,  // 19: front-left
+		0.0f, 0.0f, 0.0f,  0.0f, 1.0f,  //back-left
+		1.0f, 0.0f, 0.0f,  1.0f, 1.0f,  //back-right
+		0.0f, 0.0f, 1.0f,  0.0f, 0.0f,  //front-left
+		1.0f, 0.0f, 1.0f,  1.0f, 0.0f,  //front-right
 		// ^ bottom ^
 
-		0.0f, 1.0f, 0.0f,  0.0f, 1.0f,  // 20: back-left
-		1.0f, 1.0f, 0.0f,  1.0f, 1.0f,  // 21: back-right
-		1.0f, 1.0f, 1.0f,  1.0f, 0.0f,  // 22: front-right
-		0.0f, 1.0f, 1.0f,  0.0f, 0.0f   // 23: front-left
+		1.0f, 1.0f, 0.0f,  1.0f, 1.0f,  //back-right
+		0.0f, 1.0f, 0.0f,  0.0f, 1.0f,  //back-left
+		1.0f, 1.0f, 1.0f,  1.0f, 0.0f,  //front-right
+		0.0f, 1.0f, 1.0f,  0.0f, 0.0f   //front-left
 		// ^ top ^
 	};
 	/*

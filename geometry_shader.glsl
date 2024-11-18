@@ -13,12 +13,44 @@ uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
 
-const int FACE_DIRECTION_BACK = 0;
-const int FACE_DIRECTION_FRONT = 1;
-const int FACE_DIRECTION_LEFT = 2;
-const int FACE_DIRECTION_RIGHT = 3;
-const int FACE_DIRECTION_BOTTOM = 4;
-const int FACE_DIRECTION_TOP = 5;
+const float blockVertices[120] = {
+	//pos             //texture cords
+	1.0f, 0.0f, 0.0f,  1.0f, 0.0f,  //bottom-right
+	0.0f, 0.0f, 0.0f,  0.0f, 0.0f,  //bottom-left
+	1.0f, 1.0f, 0.0f,  1.0f, 1.0f,  //top-right
+	0.0f, 1.0f, 0.0f,  0.0f, 1.0f,  //top-left
+	// ^ back ^
+
+	0.0f, 0.0f, 1.0f,  0.0f, 0.0f,  //bottom-left
+	1.0f, 0.0f, 1.0f,  1.0f, 0.0f,  //bottom-right
+	0.0f, 1.0f, 1.0f,  0.0f, 1.0f,  //top-left
+	1.0f, 1.0f, 1.0f,  1.0f, 1.0f,  //top-right
+	// ^ front ^
+		
+	0.0f, 0.0f, 0.0f,  1.0f, 0.0f,  //bottom-back
+	0.0f, 0.0f, 1.0f,  0.0f, 0.0f,  //bottom-front
+	0.0f, 1.0f, 0.0f,  1.0f, 1.0f,  //top-back
+	0.0f, 1.0f, 1.0f,  0.0f, 1.0f,  //top-front
+	// ^ left ^
+
+	1.0f, 0.0f, 1.0f,  0.0f, 0.0f,  //bottom-front
+	1.0f, 0.0f, 0.0f,  1.0f, 0.0f,  //bottom-back
+	1.0f, 1.0f, 1.0f,  0.0f, 1.0f,  //top-front
+	1.0f, 1.0f, 0.0f,  1.0f, 1.0f,  //top-back
+	// ^ right ^
+
+	0.0f, 0.0f, 0.0f,  0.0f, 1.0f,  //back-left
+	1.0f, 0.0f, 0.0f,  1.0f, 1.0f,  //back-right
+	0.0f, 0.0f, 1.0f,  0.0f, 0.0f,  //front-left
+	1.0f, 0.0f, 1.0f,  1.0f, 0.0f,  //front-right
+	// ^ bottom ^
+
+	1.0f, 1.0f, 0.0f,  1.0f, 1.0f,  //back-right
+	0.0f, 1.0f, 0.0f,  0.0f, 1.0f,  //back-left
+	1.0f, 1.0f, 1.0f,  1.0f, 0.0f,  //front-right
+	0.0f, 1.0f, 1.0f,  0.0f, 0.0f   //front-left
+	// ^ top ^
+};
 
 void createVertex(vec3 offset, vec2 texCoord) {
     vec4 blockPos = gl_in[0].gl_Position + vec4(offset, 0.0);
@@ -31,54 +63,18 @@ void createVertex(vec3 offset, vec2 texCoord) {
 void main() {
     vec3 basePos = gl_in[0].gl_Position.xyz;
     
-    // Generate vertices based on face direction
-    switch(v_faceDirection[0]) {
-        case FACE_DIRECTION_BACK:
-            // Bottom-right
-            createVertex(vec3(1.0, 0.0, 0.0), vec2(1.0, 0.0));
-            // Bottom-left
-            createVertex(vec3(0.0, 0.0, 0.0), vec2(0.0, 0.0));
-            // Top-right
-            createVertex(vec3(1.0, 1.0, 0.0), vec2(1.0, 1.0));
-            // Top-left
-            createVertex(vec3(0.0, 1.0, 0.0), vec2(0.0, 1.0));
-            break;
+	createVertex(
+	vec3(blockVertices[0 + 20 * v_faceDirection[0]], blockVertices[1 + 20 * v_faceDirection[0]], blockVertices[2 + 20 * v_faceDirection[0]]),
+	vec2(blockVertices[3 + 20 * v_faceDirection[0]], blockVertices[4 + 20 * v_faceDirection[0]]));
+	createVertex(
+	vec3(blockVertices[0 + 5 + 20 * v_faceDirection[0]], blockVertices[1 + 5 + 20 * v_faceDirection[0]], blockVertices[2 + 5 + 20 * v_faceDirection[0]]),
+	vec2(blockVertices[3 + 5 + 20 * v_faceDirection[0]], blockVertices[4 + 5 + 20 * v_faceDirection[0]]));
+    createVertex(
+	vec3(blockVertices[0 + 10 + 20 * v_faceDirection[0]], blockVertices[1 + 10 + 20 * v_faceDirection[0]], blockVertices[2 + 10 + 20 * v_faceDirection[0]]),
+	vec2(blockVertices[3 + 10 + 20 * v_faceDirection[0]], blockVertices[4 + 10 + 20 * v_faceDirection[0]]));
+	createVertex(
+	vec3(blockVertices[0 + 15 + 20 * v_faceDirection[0]], blockVertices[1 + 15 + 20 * v_faceDirection[0]], blockVertices[2 + 15 + 20 * v_faceDirection[0]]),
+	vec2(blockVertices[3 + 15 + 20 * v_faceDirection[0]], blockVertices[4 + 15 + 20 * v_faceDirection[0]]));
 
-        case FACE_DIRECTION_FRONT:
-            createVertex(vec3(0.0, 0.0, 1.0), vec2(0.0, 0.0));
-            createVertex(vec3(1.0, 0.0, 1.0), vec2(1.0, 0.0));
-            createVertex(vec3(0.0, 1.0, 1.0), vec2(0.0, 1.0));
-            createVertex(vec3(1.0, 1.0, 1.0), vec2(1.0, 1.0));
-            break;
-
-        case FACE_DIRECTION_LEFT:
-            createVertex(vec3(0.0, 0.0, 0.0), vec2(1.0, 0.0));
-            createVertex(vec3(0.0, 0.0, 1.0), vec2(0.0, 0.0));
-            createVertex(vec3(0.0, 1.0, 0.0), vec2(1.0, 1.0));
-            createVertex(vec3(0.0, 1.0, 1.0), vec2(0.0, 1.0));
-            break;
-
-        case FACE_DIRECTION_RIGHT:
-            createVertex(vec3(1.0, 0.0, 1.0), vec2(0.0, 0.0));
-            createVertex(vec3(1.0, 0.0, 0.0), vec2(1.0, 0.0));
-            createVertex(vec3(1.0, 1.0, 1.0), vec2(0.0, 1.0));
-            createVertex(vec3(1.0, 1.0, 0.0), vec2(1.0, 1.0));
-            break;
-
-        case FACE_DIRECTION_BOTTOM:
-            createVertex(vec3(0.0, 0.0, 0.0), vec2(0.0, 1.0));
-            createVertex(vec3(1.0, 0.0, 0.0), vec2(1.0, 1.0));
-            createVertex(vec3(0.0, 0.0, 1.0), vec2(0.0, 0.0));
-            createVertex(vec3(1.0, 0.0, 1.0), vec2(1.0, 0.0));
-            break;
-
-        case FACE_DIRECTION_TOP:
-            createVertex(vec3(1.0, 1.0, 0.0), vec2(1.0, 1.0));
-            createVertex(vec3(0.0, 1.0, 0.0), vec2(0.0, 1.0));
-            createVertex(vec3(1.0, 1.0, 1.0), vec2(1.0, 0.0));
-            createVertex(vec3(0.0, 1.0, 1.0), vec2(0.0, 0.0));
-            break;
-    }
-    
     EndPrimitive();
 }
