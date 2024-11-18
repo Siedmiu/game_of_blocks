@@ -16,9 +16,9 @@ shaders::shaders() {
 
     try
     {
-        vShaderFile.open("vertex_shader.txt");
-        fShaderFile.open("fragment_shader.txt");
-        gShaderFile.open("geometry_shader.txt");
+        vShaderFile.open("vertex_shader.glsl");
+        fShaderFile.open("fragment_shader.glsl");
+        gShaderFile.open("geometry_shader.glsl");
         std::stringstream vShaderStream, fShaderStream, gShaderStream;
 
         vShaderStream << vShaderFile.rdbuf();

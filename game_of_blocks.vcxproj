@@ -163,12 +163,9 @@
   </ItemGroup>
   <ItemGroup>
     <Text Include="chrono.txt" />
-    <Text Include="fragment_shader.txt" />
-    <Text Include="geometry_shader.txt" />
-    <Text Include="vertex_shader.txt" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="temporary" />
+    <Text Include="fragment_shader.glsl" />
+    <Text Include="geometry_shader.glsl" />
+    <Text Include="vertex_shader.glsl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
