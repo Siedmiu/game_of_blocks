@@ -12,7 +12,7 @@
 class shaders {
 private:
 	//shadery (kompilowane runtime)
-	unsigned int vertexShader, fragmentShader, shaderProgram;
+	unsigned int vertexShader, fragmentShader, geometryShader, shaderProgram;
 
 	void checkCompileErrors(GLuint shader, std::string type);
 

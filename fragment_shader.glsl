@@ -3,11 +3,11 @@
 out vec4 FragColor;
 
 in vec2 TexCoord;
-flat in int TexID;
+flat in int FragTexID;
 
 uniform sampler2D texturesArray[4];
 
 void main()
 {
-	FragColor = texture(texturesArray[TexID], TexCoord);
+	FragColor = texture(texturesArray[FragTexID], TexCoord);
 }
