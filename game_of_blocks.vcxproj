@@ -167,6 +167,10 @@
     <Text Include="geometry_shader.glsl" />
     <Text Include="vertex_shader.glsl" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="framebuffer_fragment_shader.glsl" />
+    <None Include="framebuffer_vertex_shader.glsl" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

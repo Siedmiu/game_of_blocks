@@ -11,8 +11,7 @@
 // moze:
 // naprawic oktawy
 //
-
-//block id
+//block id:
 //32 = air
 //0 = grass
 //1 = dirt
@@ -35,7 +34,6 @@
 #include "errorReporting.h"
 
 #include <iostream>
-//#include <thread>
 
 const int SCR_WIDTH = 1920; //1280
 const int SCR_HEIGHT = 1080; //720
@@ -86,8 +84,9 @@ int main() {
     //kompilacja shaderow
     shaders shaders;
 
-    unsigned int shaderProgram;
+    unsigned int shaderProgram, fragmentShaderProgram;
     shaderProgram = shaders.shaderProgramID();
+    fragmentShaderProgram = shaders.framebufferShaderProgramID();
 
     //tekstury
     TextureLoader textureLoader;
@@ -105,16 +104,61 @@ int main() {
         shaders.setInt("texturesArray[" + std::to_string(i) + "]", i);
     }
 
-    //std::cout << glGetUniformLocation(shaderProgram, "texturesArray[3]") << std::endl;
-
-    //generacja ID vbo (obiektu buferowego wierzcholkow) i przypisanie typu
+    //vertices storage objects
     unsigned int SSBO, VAO;
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &SSBO);
 
+    //I NEED TO PUT THIS IN NEW FRAMEBUFFER FILE FOR GODS SAKE
+
+    //frame buffer and its texture for post processing effects
+    //this is necesary to dirlectly read it in the shader
+    unsigned int FBO, framebufferTexture;
+    glGenFramebuffers(1, &FBO);
+    glBindFramebuffer(GL_FRAMEBUFFER, FBO);
+
+    glGenTextures(1, &framebufferTexture);
+    glBindTexture(GL_TEXTURE_2D, framebufferTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, framebufferTexture, 0);
+
+    //render buffer
+    unsigned int RBO;
+    glGenRenderbuffers(1, &RBO);
+    glBindRenderbuffer(GL_RENDERBUFFER, RBO);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, SCR_WIDTH, SCR_HEIGHT);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, RBO);
+
+    float framebufferVertices[24] = {
+         1.0f, -1.0f,  1.0f, 0.0f,
+        -1.0f, -1.0f,  0.0f, 0.0f,
+        -1.0f,  1.0f,  0.0f, 1.0f,
+        
+         1.0f,  1.0f,  1.0f, 1.0f,
+         1.0f, -1.0f,  1.0f, 0.0f,
+        -1.0f,  1.0f,  0.0f, 1.0f
+    };
+
+    unsigned int framebufferVAO, framebufferVBO;
+    glGenVertexArrays(1, &framebufferVAO);
+    glGenBuffers(1, &framebufferVBO);
+    glBindVertexArray(framebufferVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, framebufferVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(framebufferVertices), &framebufferVertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+
+    //Edging mode
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-    //-----------------MACIERZE TRANSFORMACJI----------------------------//
+    //-----------------TRANSFORMATION MATRICES----------------------------//
     //macierz modelu
     glm::mat4 model = glm::mat4(1.0f);
     model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f));
@@ -219,11 +263,11 @@ int main() {
         glfwPollEvents();
     }
 
-    //running = false;
-    //chunkThread.join();
-
     glDeleteVertexArrays(1, &VAO);
+    glDeleteVertexArrays(1, &framebufferVAO);
     glDeleteBuffers(1, &SSBO);
+    glDeleteBuffers(1, &FBO);
+    glDeleteBuffers(1, &framebufferVBO);
     glDeleteProgram(shaderProgram);
 
     glfwTerminate();

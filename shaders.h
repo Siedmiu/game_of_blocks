@@ -13,6 +13,7 @@ class shaders {
 private:
 	//shadery (kompilowane runtime)
 	unsigned int vertexShader, fragmentShader, geometryShader, shaderProgram;
+	unsigned int framebufferVertexShader, framebufferFragmentShader, fragmentShaderProgram;
 
 	void checkCompileErrors(GLuint shader, std::string type);
 
@@ -21,6 +22,7 @@ public:
 
 	void use() const;
 	unsigned int shaderProgramID() const;
+	unsigned int framebufferShaderProgramID() const;
 	void setMat4(const std::string& name, const glm::mat4& mat) const;
 	void setInt(const std::string& name, int value) const;
 };

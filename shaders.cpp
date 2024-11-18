@@ -6,32 +6,48 @@ shaders::shaders() {
     std::string vertexCode;
     std::string fragmentCode;
     std::string geometrCode;
+    std::string framebufferFragmentCode;
+    std::string framebufferVertexCode;
+
     std::ifstream vShaderFile;
     std::ifstream fShaderFile;
     std::ifstream gShaderFile;
+    std::ifstream framebufferFragmentShaderFile;
+    std::ifstream framebufferVertexShaderFile;
 
     vShaderFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
     fShaderFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
     gShaderFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+    framebufferFragmentShaderFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+    framebufferVertexShaderFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
 
     try
     {
         vShaderFile.open("vertex_shader.glsl");
         fShaderFile.open("fragment_shader.glsl");
         gShaderFile.open("geometry_shader.glsl");
-        std::stringstream vShaderStream, fShaderStream, gShaderStream;
+        framebufferFragmentShaderFile.open("framebuffer_fragment_shader.glsl");
+        framebufferVertexShaderFile.open("framebuffer_vertex_shader.glsl");
+
+        std::stringstream vShaderStream, fShaderStream, gShaderStream, framebufferFragmentShaderStream, framebufferVertexShaderStream;
 
         vShaderStream << vShaderFile.rdbuf();
         fShaderStream << fShaderFile.rdbuf();
         gShaderStream << gShaderFile.rdbuf();
+        framebufferFragmentShaderStream << framebufferFragmentShaderFile.rdbuf();
+        framebufferVertexShaderStream << framebufferVertexShaderFile.rdbuf();
 
         vShaderFile.close();
         fShaderFile.close();
         gShaderFile.close();
+        framebufferFragmentShaderFile.close();
+        framebufferVertexShaderFile.close();
 
         vertexCode = vShaderStream.str();
         fragmentCode = fShaderStream.str();
         geometrCode = gShaderStream.str();
+        framebufferFragmentCode = framebufferFragmentShaderStream.str();
+        framebufferVertexCode = framebufferVertexShaderStream.str();
     }
     catch (std::ifstream::failure& e)
     {
@@ -41,7 +57,10 @@ shaders::shaders() {
     const char* vertexShaderCode = vertexCode.c_str();
     const char* fragmentShaderCode = fragmentCode.c_str();
     const char* geometrShaderCode = geometrCode.c_str();
+    const char* framebufferFragmentShaderCode = framebufferFragmentCode.c_str();
+    const char* framebufferVertexShaderCode = framebufferVertexCode.c_str();
 
+    //BASE SHADER
     //id shadera
     vertexShader = glCreateShader(GL_VERTEX_SHADER);
     //powiazanie kodu shadera
@@ -53,7 +72,6 @@ shaders::shaders() {
     glShaderSource(fragmentShader, 1, &fragmentShaderCode, NULL);
     glCompileShader(fragmentShader);
     checkCompileErrors(fragmentShader, "FRAGMENT");
-
     
     geometryShader = glCreateShader(GL_GEOMETRY_SHADER);
     glShaderSource(geometryShader, 1, &geometrShaderCode, NULL);
@@ -71,10 +89,34 @@ shaders::shaders() {
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
     glDeleteShader(geometryShader);
+
+    //FRAMEBUFFER SHADER
+    framebufferVertexShader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(framebufferVertexShader, 1, &framebufferVertexShaderCode, NULL);
+    glCompileShader(framebufferVertexShader);
+    checkCompileErrors(framebufferVertexShader, "FRAMEBUFFER_VERTEX");
+
+    framebufferFragmentShader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(framebufferFragmentShader, 1, &framebufferFragmentShaderCode, NULL);
+    glCompileShader(framebufferFragmentShader);
+    checkCompileErrors(framebufferFragmentShader, "FRAMEBUFFER_FRAGMENT");
+
+    fragmentShaderProgram = glCreateProgram();
+    glAttachShader(fragmentShaderProgram, framebufferVertexShader);
+    glAttachShader(fragmentShaderProgram, framebufferFragmentShader);
+    glLinkProgram(fragmentShaderProgram);
+    checkCompileErrors(fragmentShaderProgram, "FRAMEBUFFER_PROGRAM");
+
+    glDeleteShader(framebufferVertexShader);
+    glDeleteShader(framebufferFragmentShader);
 }
 
 unsigned int shaders::shaderProgramID() const {
     return shaderProgram;
+}
+
+unsigned int shaders::framebufferShaderProgramID() const {
+    return fragmentShaderProgram;
 }
 
 void shaders::use() const {
@@ -90,7 +132,7 @@ void shaders::setMat4(const std::string& name, const glm::mat4& mat) const {
 void shaders::checkCompileErrors(GLuint shader, std::string type) {
     GLint success;
     GLchar infoLog[1024];
-    if (type != "PROGRAM")
+    if (type != "PROGRAM" && type != "FRAMEBUFFER_PROGRAM")
     {
         glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
         if (!success)

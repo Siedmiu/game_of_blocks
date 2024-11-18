@@ -15,14 +15,14 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-const unsigned short int CHUNK_HEIGHT = 100, CHUNK_LENGTH = 16;
+const unsigned short int CHUNK_HEIGHT = 100, CHUNK_LENGTH = 16; //na razie nie zmienac
 const float CHUNK_LENGTH_RECIPROCAL = 1.0f / CHUNK_LENGTH;
 
 class world {
 private:
 	//WORLD SETTINGS
-	const unsigned short int RENDER_DISTANCE_CHUNKS = 10, BLOCK_SIZE = 1;
-	static const unsigned short int CHUNK_VOLUME = CHUNK_HEIGHT * CHUNK_LENGTH * CHUNK_LENGTH;
+	const unsigned short int RENDER_DISTANCE_CHUNKS = 15, BLOCK_SIZE = 1;
+	static const unsigned int CHUNK_VOLUME = CHUNK_HEIGHT * CHUNK_LENGTH * CHUNK_LENGTH;
 
 	//GENERATION SETTINGS
 	static const unsigned int SEED = 1234;
@@ -33,7 +33,7 @@ private:
 	const uint8_t FACE_DIRECTION_BACK = 0, FACE_DIRECTION_FRONT = 1, FACE_DIRECTION_LEFT = 2, 
 				  FACE_DIRECTION_RIGHT = 3, FACE_DIRECTION_BOTTOM = 4, FACE_DIRECTION_TOP = 5;
 
-
+	/*
 	const float blockVertices[120] = {
 		//pos             //texture cords
 		1.0f, 0.0f, 0.0f,  1.0f, 0.0f,  //bottom-right
@@ -72,7 +72,7 @@ private:
 		0.0f, 1.0f, 1.0f,  0.0f, 0.0f   //front-left
 		// ^ top ^
 	};
-	/*
+	
 	const unsigned int indices[6] = {
 	0, 1, 3,   //first triangle
 	1, 2, 3    //second triangle
