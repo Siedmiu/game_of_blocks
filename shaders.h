@@ -8,6 +8,7 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <unordered_map>
 
 class shaders {
 private:
@@ -16,6 +17,7 @@ private:
 	unsigned int framebufferVertexShader, framebufferFragmentShader, framebufferShaderProgram;
 
 	void checkCompileErrors(GLuint shader, std::string type);
+	std::unordered_map<std::string, std::string> loadShaderFiles(const std::vector<std::string>& shaderFiles);
 
 public:
 	shaders();

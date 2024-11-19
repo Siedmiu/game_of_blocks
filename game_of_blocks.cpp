@@ -3,6 +3,8 @@
 //learnOpenGL my beloved https://learnopengl.com/Lighting/Basic-Lighting
 //colision detection therory https://gamedev.net/tutorials/programming/general-and-gameplay-programming/swept-aabb-collision-detection-and-response-r3084/
 //post processing https://www.youtube.com/watch?v=RepvBIfpcwE
+//image processing convolution https://www.youtube.com/watch?v=KuXjwB4LzSA
+//canny edge detection https://en.wikipedia.org/wiki/Canny_edge_detector
 
 //do zrobienia
 // kolizja i chodzenie
@@ -109,7 +111,7 @@ int main() {
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &SSBO);
 
-    //I NEED TO PUT THIS IN NEW FRAMEBUFFER FILE FOR GODS SAKE
+    //put this into a new file
     //frame buffer and its texture for post processing effects
     shaders.use(framebufferShaderProgram);
 
@@ -163,6 +165,7 @@ int main() {
         std::cout << "FRAMEBUFFER NOT COMPLETE" << std::endl;
     }
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    //end
 
     //Edging mode
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -199,7 +202,7 @@ int main() {
     //std::thread chunkThread(chunkGenerationThread, std::ref(world));
 
     //inicjalizacja renderer
-    renderer renderer(shaderProgram, framebufferShaderProgram, world);
+    renderer renderer(shaderProgram, world);
 
     //time
     float timeAccumulator = 0.0f;
@@ -273,6 +276,7 @@ int main() {
         //render
         renderer.render(VAO);
 
+        //make this a postprocess function
         //framebuffer post process
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         glUseProgram(framebufferShaderProgram);
@@ -281,6 +285,7 @@ int main() {
 
         glBindTexture(GL_TEXTURE_2D, framebufferTexture);
         glDrawArrays(GL_TRIANGLES, 0, 6);
+        //
 
         // (podwojny buffer), sprawdzanie eventow
         glfwSwapBuffers(window);

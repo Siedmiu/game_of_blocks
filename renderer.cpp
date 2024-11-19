@@ -1,11 +1,10 @@
 #include "renderer.h"
 #include "shaders.h"
 
-renderer::renderer(unsigned int shaderProgramID, unsigned int framebufferShaderProgramID, const world& gameWorld)
+renderer::renderer(unsigned int shaderProgramID, const world& gameWorld)
     : gameWorld(gameWorld) {
     timeValue = 0.0;
     shaderProgram = shaderProgramID;
-    framebufferShaderProgram = framebufferShaderProgramID;
     model = glm::mat4(1.0f);
 }
 
