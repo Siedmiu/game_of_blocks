@@ -10,9 +10,10 @@
 class TextureLoader {
 private:
     void setTextureParameters();
+    int textureOffset;
 
 public:
-    TextureLoader();
+    TextureLoader(int textureOffset);
     ~TextureLoader();
 
     std::vector<unsigned int> loadTextures(const std::vector<std::string>& textureFiles);

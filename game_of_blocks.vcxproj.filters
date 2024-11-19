@@ -48,6 +48,9 @@
     <ClCompile Include="errorReporting.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="framebuffer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="camera.h">
@@ -77,6 +80,9 @@
     <ClInclude Include="errorReporting.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="framebuffer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="chrono.txt" />
@@ -87,5 +93,15 @@
   <ItemGroup>
     <None Include="framebuffer_fragment_shader.glsl" />
     <None Include="framebuffer_vertex_shader.glsl" />
+    <None Include="shaders\fragment_shader.glsl" />
+    <None Include="shaders\framebuffer_fragment_shader.glsl" />
+    <None Include="shaders\framebuffer_vertex_shader.glsl" />
+    <None Include="shaders\geometry_shader.glsl" />
+    <None Include="shaders\vertex_shader.glsl" />
+    <None Include="..\shaders\fragment_shader.glsl" />
+    <None Include="..\shaders\framebuffer_fragment_shader.glsl" />
+    <None Include="..\shaders\framebuffer_vertex_shader.glsl" />
+    <None Include="..\shaders\geometry_shader.glsl" />
+    <None Include="..\shaders\vertex_shader.glsl" />
   </ItemGroup>
 </Project>

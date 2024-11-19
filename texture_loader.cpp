@@ -1,7 +1,8 @@
 // texture_loader.cpp
 #include "texture_loader.h"
 
-TextureLoader::TextureLoader() {
+TextureLoader::TextureLoader(int textureOffset):
+    textureOffset(textureOffset) {
     stbi_set_flip_vertically_on_load(true);
 }
 
@@ -38,7 +39,7 @@ std::vector<unsigned int> TextureLoader::loadTextures(const std::vector<std::str
     std::vector<unsigned int> textureIDs(textureFiles.size());
 
     for (size_t i = 0; i < textureFiles.size(); i++) {
-        glActiveTexture(GL_TEXTURE0 + i + 1);
+        glActiveTexture(GL_TEXTURE0 + i + textureOffset);
         textureIDs[i] = loadTexture(textureFiles[i]);
     }
 

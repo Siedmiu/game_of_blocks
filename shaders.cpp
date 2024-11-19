@@ -77,6 +77,7 @@ std::unordered_map<std::string, std::string> shaders::loadShaderFiles(const std:
         shaderFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
 
         try {
+            //shaderFile.open("../shaders/" + filename);
             shaderFile.open(filename);
 
             std::stringstream shaderStream;

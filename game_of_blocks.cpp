@@ -35,6 +35,7 @@
 #include "player.h"
 #include "texture_loader.h"
 #include "errorReporting.h"
+#include "framebuffer.h"
 
 #include <iostream>
 
@@ -90,8 +91,18 @@ int main() {
     shaderProgram = shaders.shaderProgramID();
     framebufferShaderProgram = shaders.framebufferShaderProgramID();
 
+    //frame buffer and its texture for post processing effects
+    shaders.use(framebufferShaderProgram);
+
+    framebuffer framebuffer(SCR_WIDTH, SCR_HEIGHT);
+    framebuffer.createFramebuffer();
+
+    int textureOffset = framebuffer.getNumberOfTextures();
+
+    for (int i = 0; i < textureOffset; i++) shaders.setInt(framebufferShaderProgram, "screenTexture" + std::to_string(i), i);
+
     //tekstury
-    TextureLoader textureLoader;
+    TextureLoader textureLoader(textureOffset);
     std::vector<std::string> textureFiles = {
         "grass_block_top.png",
         "dirt.png",
@@ -103,69 +114,13 @@ int main() {
 
     shaders.use(shaderProgram);
     for (int i = 0; i < textures.size(); i++) {
-        shaders.setInt(shaderProgram, "texturesArray[" + std::to_string(i) + "]", i + 1);
+        shaders.setInt(shaderProgram, "texturesArray[" + std::to_string(i) + "]", i + textureOffset);
     }
 
     //vertices storage objects
     unsigned int SSBO, VAO;
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &SSBO);
-
-    //put this into a new file
-    //frame buffer and its texture for post processing effects
-    shaders.use(framebufferShaderProgram);
-
-    unsigned int FBO, framebufferTexture;
-    glGenFramebuffers(1, &FBO);
-    glBindFramebuffer(GL_FRAMEBUFFER, FBO);
-
-    glActiveTexture(GL_TEXTURE0);
-    glGenTextures(1, &framebufferTexture);
-    glBindTexture(GL_TEXTURE_2D, framebufferTexture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, framebufferTexture, 0);
-
-    //render buffer
-    unsigned int RBO;
-    glGenRenderbuffers(1, &RBO);
-    glBindRenderbuffer(GL_RENDERBUFFER, RBO);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, SCR_WIDTH, SCR_HEIGHT);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, RBO);
-
-    //CCW winding order
-    float framebufferVertices[24] = {
-        -1.0f,  1.0f,  0.0f, 1.0f,
-        -1.0f, -1.0f,  0.0f, 0.0f,
-         1.0f, -1.0f,  1.0f, 0.0f,
-        
-        -1.0f,  1.0f,  0.0f, 1.0f,
-         1.0f, -1.0f,  1.0f, 0.0f,
-         1.0f,  1.0f,  1.0f, 1.0f
-    };
-
-    unsigned int framebufferVAO, framebufferVBO;
-    glGenVertexArrays(1, &framebufferVAO);
-    glGenBuffers(1, &framebufferVBO);
-    glBindVertexArray(framebufferVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, framebufferVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(framebufferVertices), &framebufferVertices, GL_STATIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
-
-    shaders.setInt(framebufferShaderProgram, "screenTexture", 0);
-
-    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-        std::cout << "FRAMEBUFFER NOT COMPLETE" << std::endl;
-    }
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    //end
 
     //Edging mode
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -234,7 +189,7 @@ int main() {
         world.createChunks();
 
         //bind framebuffer before drawing anything
-        glBindFramebuffer(GL_FRAMEBUFFER, FBO);
+        framebuffer.bindFramebuffer();
 
         //clear zbuffer
         glClearColor(0.2f, 0.4f, 0.6f, 1.0f);
@@ -276,16 +231,9 @@ int main() {
         //render
         renderer.render(VAO);
 
-        //make this a postprocess function
         //framebuffer post process
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glUseProgram(framebufferShaderProgram);
-        glBindVertexArray(framebufferVAO);
-        glDisable(GL_DEPTH_TEST);
-
-        glBindTexture(GL_TEXTURE_2D, framebufferTexture);
-        glDrawArrays(GL_TRIANGLES, 0, 6);
-        //
+        framebuffer.postProcess(framebufferShaderProgram);
 
         // (podwojny buffer), sprawdzanie eventow
         glfwSwapBuffers(window);
@@ -293,11 +241,9 @@ int main() {
     }
 
     glDeleteVertexArrays(1, &VAO);
-    glDeleteVertexArrays(1, &framebufferVAO);
     glDeleteBuffers(1, &SSBO);
-    glDeleteBuffers(1, &FBO);
-    glDeleteBuffers(1, &framebufferVBO);
     glDeleteProgram(shaderProgram);
+    glDeleteProgram(framebufferShaderProgram);
 
     glfwTerminate();
 }

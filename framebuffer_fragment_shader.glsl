@@ -3,7 +3,7 @@
 out vec4 fColour;
 in vec2 fTexCoords;
 
-uniform sampler2D screenTexture;
+uniform sampler2D screenTexture0;
 
 const bool BLACK_AND_WHITE = false;
 const bool INVERSE_COLOURS = false;
@@ -26,21 +26,21 @@ const float EDGE_DETECTION_KERNEL_3x3[9] = float[] (
 
 void main() {
 	if (BLACK_AND_WHITE) {
-		vec4 pixel = texture(screenTexture, fTexCoords);
+		vec4 pixel = texture(screenTexture0, fTexCoords);
 		float intensity = 0.333 * (pixel.r + pixel.g + pixel.b);
 		fColour = vec4(vec3(intensity), 1);
 
 	} else if (INVERSE_COLOURS) {
-		fColour = vec4(1.0f, 1.0f, 1.0f, 2.0f ) - texture(screenTexture, fTexCoords);
+		fColour = vec4(1.0f, 1.0f, 1.0f, 2.0f ) - texture(screenTexture0, fTexCoords);
 
 	} else if (EDGE_DETECTION) {
 		vec3 colourRGB = vec3(0.0f);
 		for(int i = 0; i < 9; i++) {
-			colourRGB += vec3(texture(screenTexture, fTexCoords.st + PIXEL_OFFSETS_3x3[i])) * EDGE_DETECTION_KERNEL_3x3[i];
+			colourRGB += vec3(texture(screenTexture0, fTexCoords.st + PIXEL_OFFSETS_3x3[i])) * EDGE_DETECTION_KERNEL_3x3[i];
 		}
 		fColour = vec4(colourRGB, 1.0f);
 
 	} else {
-		fColour = texture(screenTexture, fTexCoords);
+		fColour = texture(screenTexture0, fTexCoords);
 	}
 }
