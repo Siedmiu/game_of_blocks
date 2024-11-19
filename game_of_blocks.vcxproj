@@ -157,7 +157,6 @@
     <ClInclude Include="shaders.h" />
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="texture_loader.h" />
-    <ClInclude Include="uniformSetters.h" />
     <ClInclude Include="window.h" />
     <ClInclude Include="world.h" />
   </ItemGroup>

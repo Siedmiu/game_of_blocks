@@ -1,7 +1,8 @@
-//https://iquilezles.org/articles/morenoise/
-//https://www.scratchapixel.com/lessons/procedural-generation-virtual-worlds/procedural-patterns-noise-part-1/creating-simple-2D-noise.html
-//https://learnopengl.com/Lighting/Basic-Lighting
-//https://gamedev.net/tutorials/programming/general-and-gameplay-programming/swept-aabb-collision-detection-and-response-r3084/
+//derivative terrain generation https://iquilezles.org/articles/morenoise/
+//noise generation https://www.scratchapixel.com/lessons/procedural-generation-virtual-worlds/procedural-patterns-noise-part-1/introduction.html
+//learnOpenGL my beloved https://learnopengl.com/Lighting/Basic-Lighting
+//colision detection therory https://gamedev.net/tutorials/programming/general-and-gameplay-programming/swept-aabb-collision-detection-and-response-r3084/
+//post processing https://www.youtube.com/watch?v=RepvBIfpcwE
 
 //do zrobienia
 // kolizja i chodzenie
@@ -73,7 +74,6 @@ int main() {
     }
 
     //OPENGL------------------------------------------------------------------------
-    glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
     glEnable(GL_MULTISAMPLE);
     glEnable(GL_BLEND);
@@ -84,9 +84,9 @@ int main() {
     //kompilacja shaderow
     shaders shaders;
 
-    unsigned int shaderProgram, fragmentShaderProgram;
+    unsigned int shaderProgram, framebufferShaderProgram;
     shaderProgram = shaders.shaderProgramID();
-    fragmentShaderProgram = shaders.framebufferShaderProgramID();
+    framebufferShaderProgram = shaders.framebufferShaderProgramID();
 
     //tekstury
     TextureLoader textureLoader;
@@ -99,9 +99,9 @@ int main() {
 
     std::vector<unsigned int> textures = textureLoader.loadTextures(textureFiles);
 
-    shaders.use();
+    shaders.use(shaderProgram);
     for (int i = 0; i < textures.size(); i++) {
-        shaders.setInt("texturesArray[" + std::to_string(i) + "]", i);
+        shaders.setInt(shaderProgram, "texturesArray[" + std::to_string(i) + "]", i + 1);
     }
 
     //vertices storage objects
@@ -110,13 +110,14 @@ int main() {
     glGenBuffers(1, &SSBO);
 
     //I NEED TO PUT THIS IN NEW FRAMEBUFFER FILE FOR GODS SAKE
-
     //frame buffer and its texture for post processing effects
-    //this is necesary to dirlectly read it in the shader
+    shaders.use(framebufferShaderProgram);
+
     unsigned int FBO, framebufferTexture;
     glGenFramebuffers(1, &FBO);
     glBindFramebuffer(GL_FRAMEBUFFER, FBO);
 
+    glActiveTexture(GL_TEXTURE0);
     glGenTextures(1, &framebufferTexture);
     glBindTexture(GL_TEXTURE_2D, framebufferTexture);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
@@ -134,14 +135,15 @@ int main() {
     glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, SCR_WIDTH, SCR_HEIGHT);
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, RBO);
 
+    //CCW winding order
     float framebufferVertices[24] = {
-         1.0f, -1.0f,  1.0f, 0.0f,
-        -1.0f, -1.0f,  0.0f, 0.0f,
         -1.0f,  1.0f,  0.0f, 1.0f,
-        
-         1.0f,  1.0f,  1.0f, 1.0f,
+        -1.0f, -1.0f,  0.0f, 0.0f,
          1.0f, -1.0f,  1.0f, 0.0f,
-        -1.0f,  1.0f,  0.0f, 1.0f
+        
+        -1.0f,  1.0f,  0.0f, 1.0f,
+         1.0f, -1.0f,  1.0f, 0.0f,
+         1.0f,  1.0f,  1.0f, 1.0f
     };
 
     unsigned int framebufferVAO, framebufferVBO;
@@ -155,10 +157,18 @@ int main() {
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
 
+    shaders.setInt(framebufferShaderProgram, "screenTexture", 0);
+
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+        std::cout << "FRAMEBUFFER NOT COMPLETE" << std::endl;
+    }
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
     //Edging mode
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     //-----------------TRANSFORMATION MATRICES----------------------------//
+    shaders.use(shaderProgram);
     //macierz modelu
     glm::mat4 model = glm::mat4(1.0f);
     model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f));
@@ -189,7 +199,7 @@ int main() {
     //std::thread chunkThread(chunkGenerationThread, std::ref(world));
 
     //inicjalizacja renderer
-    renderer renderer(shaderProgram, world);
+    renderer renderer(shaderProgram, framebufferShaderProgram, world);
 
     //time
     float timeAccumulator = 0.0f;
@@ -220,9 +230,13 @@ int main() {
         //generate chunks around player
         world.createChunks();
 
+        //bind framebuffer before drawing anything
+        glBindFramebuffer(GL_FRAMEBUFFER, FBO);
+
         //clear zbuffer
         glClearColor(0.2f, 0.4f, 0.6f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glEnable(GL_DEPTH_TEST);
 
         //transformacje i time step
         while (timeAccumulator >= TIMESTEP) {
@@ -249,6 +263,7 @@ int main() {
             player.movePlayer(TIMESTEP);
             world.updatePlayerPosition();
 
+            glUseProgram(shaderProgram);
             glm::mat4 view = cam.getViewMatrix();
             shaders.setMat4("view", view);
 
@@ -257,6 +272,15 @@ int main() {
 
         //render
         renderer.render(VAO);
+
+        //framebuffer post process
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glUseProgram(framebufferShaderProgram);
+        glBindVertexArray(framebufferVAO);
+        glDisable(GL_DEPTH_TEST);
+
+        glBindTexture(GL_TEXTURE_2D, framebufferTexture);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
 
         // (podwojny buffer), sprawdzanie eventow
         glfwSwapBuffers(window);

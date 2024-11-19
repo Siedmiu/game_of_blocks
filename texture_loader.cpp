@@ -38,7 +38,7 @@ std::vector<unsigned int> TextureLoader::loadTextures(const std::vector<std::str
     std::vector<unsigned int> textureIDs(textureFiles.size());
 
     for (size_t i = 0; i < textureFiles.size(); i++) {
-        glActiveTexture(GL_TEXTURE0 + i);
+        glActiveTexture(GL_TEXTURE0 + i + 1);
         textureIDs[i] = loadTexture(textureFiles[i]);
     }
 

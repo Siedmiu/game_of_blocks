@@ -65,9 +65,6 @@
     <ClInclude Include="stb_image.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="uniformSetters.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="window.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -86,5 +83,9 @@
     <Text Include="vertex_shader.glsl" />
     <Text Include="fragment_shader.glsl" />
     <Text Include="geometry_shader.glsl" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="framebuffer_fragment_shader.glsl" />
+    <None Include="framebuffer_vertex_shader.glsl" />
   </ItemGroup>
 </Project>

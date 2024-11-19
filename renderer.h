@@ -14,7 +14,7 @@ private:
     float timeValue;
 
     glm::mat4 model;
-    unsigned int shaderProgram;
+    unsigned int shaderProgram, framebufferShaderProgram;
 
     const world& gameWorld;
     static const unsigned short int CHUNK_HEIGHT = 100, CHUNK_LENGTH = 16;
@@ -26,7 +26,7 @@ private:
     }
 
 public:
-    renderer(unsigned int shaderProgram, const world& gameWorld);
+    renderer(unsigned int shaderProgram, unsigned int framebufferShaderProgramID, const world& gameWorld);
 
     ~renderer() {    };
 

@@ -96,16 +96,16 @@ shaders::shaders() {
     glCompileShader(framebufferVertexShader);
     checkCompileErrors(framebufferVertexShader, "FRAMEBUFFER_VERTEX");
 
-    framebufferFragmentShader = glCreateShader(GL_VERTEX_SHADER);
+    framebufferFragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
     glShaderSource(framebufferFragmentShader, 1, &framebufferFragmentShaderCode, NULL);
     glCompileShader(framebufferFragmentShader);
     checkCompileErrors(framebufferFragmentShader, "FRAMEBUFFER_FRAGMENT");
 
-    fragmentShaderProgram = glCreateProgram();
-    glAttachShader(fragmentShaderProgram, framebufferVertexShader);
-    glAttachShader(fragmentShaderProgram, framebufferFragmentShader);
-    glLinkProgram(fragmentShaderProgram);
-    checkCompileErrors(fragmentShaderProgram, "FRAMEBUFFER_PROGRAM");
+    framebufferShaderProgram = glCreateProgram();
+    glAttachShader(framebufferShaderProgram, framebufferVertexShader);
+    glAttachShader(framebufferShaderProgram, framebufferFragmentShader);
+    glLinkProgram(framebufferShaderProgram);
+    checkCompileErrors(framebufferShaderProgram, "FRAMEBUFFER_PROGRAM");
 
     glDeleteShader(framebufferVertexShader);
     glDeleteShader(framebufferFragmentShader);
@@ -116,14 +116,14 @@ unsigned int shaders::shaderProgramID() const {
 }
 
 unsigned int shaders::framebufferShaderProgramID() const {
-    return fragmentShaderProgram;
+    return framebufferShaderProgram;
 }
 
-void shaders::use() const {
-    glUseProgram(shaderProgram);
+void shaders::use(unsigned int shaderProgramID) const {
+    glUseProgram(shaderProgramID);
 }
-void shaders::setInt(const std::string& name, int value) const {
-    glUniform1i(glGetUniformLocation(shaderProgram, name.c_str()), value);
+void shaders::setInt(unsigned int shaderProgramID, const std::string& name, int value) const {
+    glUniform1i(glGetUniformLocation(shaderProgramID, name.c_str()), value);
 }
 void shaders::setMat4(const std::string& name, const glm::mat4& mat) const {
     glUniformMatrix4fv(glGetUniformLocation(shaderProgram, name.c_str()), 1, GL_FALSE, &mat[0][0]);
