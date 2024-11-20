@@ -5,7 +5,7 @@ in vec2 fTexCoords;
 
 uniform sampler2D screenTexture0;
 
-const bool BLACK_AND_WHITE = true;
+const bool BLACK_AND_WHITE = false;
 const bool INVERSE_COLOURS = false;
 const bool EDGE_DETECTION = false;
 

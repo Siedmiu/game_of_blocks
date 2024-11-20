@@ -9,7 +9,6 @@
 //do zrobienia
 // kolizja i chodzenie
 // z pre pass
-// Shaders
 // 
 // moze:
 // naprawic oktawy
@@ -45,7 +44,6 @@ const float FOV = 70.0f;
 const float TIMESTEP = 1.0f / 60.0f;
 
 bool blurEnabled = true;
-bool basePostProcess = false;
 
 int main() {
     //glfw inicjalizacja
@@ -90,34 +88,25 @@ int main() {
     //kompilacja shaderow
     shaders shaders;
 
-    unsigned int shaderProgram, framebufferBasicShaderProgram;
-    unsigned int blurShaderProgram;
-    shaderProgram = shaders.shaderProgramID();
-    framebufferBasicShaderProgram = shaders.framebufferShaderProgramID();
-    //multi pass buffers:
-    const int NUMBER_OF_MULTIPASS_BUFFERS = 1;
-    blurShaderProgram = shaders.blurShaderProgramID();
+    //frame buffer for post processing effects
+    unsigned int mainShader = shaders.shaderProgramID();
+    unsigned int basicPostShader = shaders.framebufferShaderProgramID();
+    unsigned int blurShader = shaders.blurShaderProgramID();
 
-    //frame buffer and its texture for post processing effects
-    shaders.use(framebufferBasicShaderProgram);
-
+    //set constants
     framebuffer framebuffer(SCR_WIDTH, SCR_HEIGHT);
-    framebuffer.createFramebuffer();
+    //initialize
+    framebuffer.initialize();
 
-    framebuffer.createMultiPassFramebuffers(NUMBER_OF_MULTIPASS_BUFFERS);
+    if (blurEnabled) {
+        framebuffer.setupPostProcessing(1);
+    }
+    
+    shaders.use(basicPostShader);
+    shaders.setInt(basicPostShader, "screenTexture", 0);
 
-    int textureOffset = framebuffer.getNumberOfTextures();
-
-    std::vector<unsigned int> postProcessShaders = {
-        blurShaderProgram
-    };
-
-    for (int i = 0; i < textureOffset; i++) shaders.setInt(framebufferBasicShaderProgram, "screenTexture" + std::to_string(i), i);
-
-    textureOffset += NUMBER_OF_MULTIPASS_BUFFERS;
-
-    //tekstury
-    TextureLoader textureLoader(textureOffset);
+    //game textures
+    TextureLoader textureLoader(1);
     std::vector<std::string> textureFiles = {
         "grass_block_top.png",
         "dirt.png",
@@ -127,9 +116,9 @@ int main() {
 
     std::vector<unsigned int> textures = textureLoader.loadTextures(textureFiles);
 
-    shaders.use(shaderProgram);
+    shaders.use(mainShader);
     for (int i = 0; i < textures.size(); i++) {
-        shaders.setInt(shaderProgram, "texturesArray[" + std::to_string(i) + "]", i + textureOffset);
+        shaders.setInt(mainShader, "texturesArray[" + std::to_string(i) + "]", i + 1);
     }
 
     //vertices storage objects
@@ -141,7 +130,7 @@ int main() {
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     //-----------------TRANSFORMATION MATRICES----------------------------//
-    shaders.use(shaderProgram);
+    shaders.use(mainShader);
     //macierz modelu
     glm::mat4 model = glm::mat4(1.0f);
     model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f));
@@ -155,8 +144,8 @@ int main() {
     projection = glm::perspective(glm::radians(FOV), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 1000.0f);
     //projection = glm::ortho(0.0f, 10.0f, 0.0f, 10.0f, 0.1f, 1000.0f);
 
-    unsigned int modelLoc = glGetUniformLocation(shaderProgram, "model");
-    unsigned int viewLoc = glGetUniformLocation(shaderProgram, "view");
+    unsigned int modelLoc = glGetUniformLocation(mainShader, "model");
+    unsigned int viewLoc = glGetUniformLocation(mainShader, "view");
 
     glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
     glUniformMatrix4fv(viewLoc, 1, GL_FALSE, &view[0][0]);
@@ -172,7 +161,7 @@ int main() {
     //std::thread chunkThread(chunkGenerationThread, std::ref(world));
 
     //inicjalizacja renderer
-    renderer renderer(shaderProgram, world);
+    renderer renderer(mainShader, world);
 
     //time
     float timeAccumulator = 0.0f;
@@ -204,7 +193,7 @@ int main() {
         world.createChunks();
 
         //bind framebuffer before drawing anything
-        framebuffer.bindFramebuffer();
+        framebuffer.bindMainFramebuffer();
 
         //clear zbuffer
         glClearColor(0.2f, 0.4f, 0.6f, 1.0f);
@@ -236,7 +225,7 @@ int main() {
             player.movePlayer(TIMESTEP);
             world.updatePlayerPosition();
 
-            glUseProgram(shaderProgram);
+            glUseProgram(mainShader);
             glm::mat4 view = cam.getViewMatrix();
             shaders.setMat4("view", view);
 
@@ -247,12 +236,13 @@ int main() {
         renderer.render(VAO);
 
         //framebuffer post process
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
         if (blurEnabled) {
+            std::vector<unsigned int> postProcessShaders = { blurShader };
             framebuffer.postProcessingChain(postProcessShaders);
-        }
-        else if (basePostProcess) {
-            framebuffer.postProcess(framebufferBasicShaderProgram);
+
+            framebuffer.renderFinalOutput(blurShader, true);
+        } else {
+            framebuffer.renderFinalOutput(basicPostShader, false);
         }
 
         // (podwojny buffer), sprawdzanie eventow
@@ -262,9 +252,8 @@ int main() {
 
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &SSBO);
-    glDeleteProgram(shaderProgram);
-    glDeleteProgram(framebufferBasicShaderProgram);
-    glDeleteProgram(blurShaderProgram);
-
+    glDeleteProgram(mainShader);
+    glDeleteProgram(basicPostShader);
+    glDeleteProgram(blurShader);
     glfwTerminate();
 }

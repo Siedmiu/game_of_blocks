@@ -1,173 +1,153 @@
+#include "framebuffer.h"
 #include <iostream>
 
-#include "framebuffer.h"
-
-framebuffer::framebuffer(int SCR_WIDTH, int SCR_HEIGHT)
-    :SCR_WIDTH(SCR_WIDTH), SCR_HEIGHT(SCR_HEIGHT) {
-    
-    glGenFramebuffers(1, &FBO);
-    glGenRenderbuffers(1, &RBO);
-
-    glGenVertexArrays(1, &framebufferVAO);
-    glGenBuffers(1, &framebufferVBO);
-
-    glGenTextures(NUMBER_OF_FRAMEBUFFERTEXTURES, framebufferTexture);
+framebuffer::framebuffer(int screenWidth, int screenHeight)
+    : SCR_WIDTH(screenWidth), SCR_HEIGHT(screenHeight) {
+    setupCanvas();
 }
 
-//this will now only be one, the rest is in multipasses
-void framebuffer::createFramebuffer() {
-    //frame buffer
-    glBindFramebuffer(GL_FRAMEBUFFER, FBO);
+framebuffer::~framebuffer() {
+    deleteFramebufferObject(mainBuffer);
+    for (auto& buffer : postProcessBuffers) {
+        deleteFramebufferObject(buffer);
+    }
 
-    //frame buffer textures
-    for (int i = 0; i < NUMBER_OF_FRAMEBUFFERTEXTURES; i++) createTextures(i);
+    glDeleteVertexArrays(1, &canvasVAO);
+    glDeleteBuffers(1, &canvasVBO);
+}
 
-    //render buffer
-    glBindRenderbuffer(GL_RENDERBUFFER, RBO);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, SCR_WIDTH, SCR_HEIGHT);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, RBO);
+void framebuffer::setupCanvas() {
+    //canvas texture "attatched to the camera"
+    glGenVertexArrays(1, &canvasVAO);
+    glGenBuffers(1, &canvasVBO);
 
-    //VAO VBO
-    glBindVertexArray(framebufferVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, framebufferVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(framebufferVertices), &framebufferVertices, GL_STATIC_DRAW);
+    glBindVertexArray(canvasVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, canvasVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(canvasVertices), canvasVertices, GL_STATIC_DRAW);
+
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
-
-    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-        std::cout << "FRAMEBUFFER NOT COMPLETE" << std::endl;
-    }
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void framebuffer::createTextures(int index) {
-    glActiveTexture(GL_TEXTURE0 + index);
-    glBindTexture(GL_TEXTURE_2D, framebufferTexture[index]);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-    
+void framebuffer::createFramebufferObject(framebufferObject& fbo) {
+    glGenFramebuffers(1, &fbo.fbo);
+    glGenTextures(1, &fbo.texture);
+    glGenRenderbuffers(1, &fbo.rbo);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo.fbo);
+
+    glBindTexture(GL_TEXTURE_2D, fbo.texture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fbo.texture, 0);
 
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + index, GL_TEXTURE_2D, framebufferTexture[index], 0);
-}
+    glBindRenderbuffer(GL_RENDERBUFFER, fbo.rbo);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, SCR_WIDTH, SCR_HEIGHT);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, fbo.rbo);
 
-int framebuffer::getNumberOfTextures() const {
-    return NUMBER_OF_FRAMEBUFFERTEXTURES;
-}
-
-void framebuffer::bindFramebuffer() const {
-    glBindFramebuffer(GL_FRAMEBUFFER, FBO);
-}
-
-void framebuffer::unbindFramebuffer() const {
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-}
-
-void framebuffer::postProcess(unsigned int framebufferShaderProgram) const {
-    glUseProgram(framebufferShaderProgram);
-    glBindVertexArray(framebufferVAO);
-    glDisable(GL_DEPTH_TEST);
-
-    glUniform1i(glGetUniformLocation(framebufferShaderProgram, "screenTexture0"), 0);
-
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, framebufferTexture[0]);
-    glDrawArrays(GL_TRIANGLES, 0, 6);
-}
-
-//multi pass
-void framebuffer::createMultiPassFramebuffers(int numberOfPasses) {
-    multiPassFBOs.clear();
-    multiPassTextures.clear();
-    multiPassFBOs.resize(numberOfPasses);
-    multiPassTextures.resize(numberOfPasses);
-
-    glGenFramebuffers(numberOfPasses, multiPassFBOs.data());
-    glGenTextures(numberOfPasses, multiPassTextures.data());
-
-    for (int i = 0; i < numberOfPasses; ++i) { //to usunac
-        glBindFramebuffer(GL_FRAMEBUFFER, multiPassFBOs[i]);
-
-        //nowa textura, potem usunac wczesniejsza wersje
-        glBindTexture(GL_TEXTURE_2D, multiPassTextures[i]);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, multiPassTextures[i], 0);
-
-        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-            std::cerr << "MULTIPASS FRAMEBUFFER" << i << " NOT COMPLETE" << std::endl;
-        }
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+        std::cerr << "FRAMEBUFFER NOT COMPLETE" << std::endl;
     }
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void framebuffer::bindMultiPassFramebuffer(int framebufferPassIndex) {
-    if (framebufferPassIndex >= 0 && framebufferPassIndex < multiPassFBOs.size()) {
-        glBindFramebuffer(GL_FRAMEBUFFER, multiPassFBOs[framebufferPassIndex]);
+void framebuffer::deleteFramebufferObject(framebufferObject& fbo) {
+    if (fbo.fbo != 0) glDeleteFramebuffers(1, &fbo.fbo);
+    if (fbo.texture != 0) glDeleteTextures(1, &fbo.texture);
+    if (fbo.rbo != 0) glDeleteRenderbuffers(1, &fbo.rbo);
+    fbo = {};
+}
+
+void framebuffer::initialize() {
+    createFramebufferObject(mainBuffer);
+}
+
+void framebuffer::setupPostProcessing(int numberOfPasses) {
+    postProcessBuffers.clear();
+    postProcessBuffers.resize(numberOfPasses);
+
+    for (auto& buffer : postProcessBuffers) {
+        createFramebufferObject(buffer);
+    }
+}
+
+void framebuffer::bindMainFramebuffer() const {
+    glBindFramebuffer(GL_FRAMEBUFFER, mainBuffer.fbo);
+}
+
+void framebuffer::bindPostProcessBuffer(int index) {
+    if (index >= 0 && index < postProcessBuffers.size()) {
+        glBindFramebuffer(GL_FRAMEBUFFER, postProcessBuffers[index].fbo);
     }
     else {
         std::cerr << "Invalid multipass framebuffer index!" << std::endl;
-    } //to usunac
-}
-
-GLuint framebuffer::getMultiPassTexture(int framebufferPassIndex) const {
-    if (framebufferPassIndex >= 0 && framebufferPassIndex < multiPassTextures.size()) {
-        return multiPassTextures[framebufferPassIndex];
     }
-    return 0;
 }
 
-void framebuffer::postProcessingChain(const std::vector<unsigned int>& shaderPrograms) {
-    if (shaderPrograms.empty()) return;
-    glBindVertexArray(framebufferVAO);
+void framebuffer::bindDefaultFramebuffer() const {
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void framebuffer::renderToScreen(GLuint shader) const {
+    glUseProgram(shader);
+    glBindVertexArray(canvasVAO);
     glDisable(GL_DEPTH_TEST);
 
-    //first pass uses original framebuffertexture
-    GLuint currentTexture = framebufferTexture[0];
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, mainBuffer.texture);
+    glUniform1i(glGetUniformLocation(shader, "screenTexture"), 0);
 
-    for (size_t i = 0; i < shaderPrograms.size(); ++i) {
-        bindMultiPassFramebuffer(i);
-        glUseProgram(shaderPrograms[i]);
-        glUniform1i(glGetUniformLocation(shaderPrograms[i], "inputTexture"), 0);
-        glUniform2f(glGetUniformLocation(shaderPrograms[i], "screenSize"), static_cast<float>(SCR_WIDTH), static_cast<float>(SCR_HEIGHT));
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+}
+
+void framebuffer::postProcessingChain(const std::vector<GLuint>& shaders) {
+    if (shaders.empty() || postProcessBuffers.empty()) return;
+
+    glBindVertexArray(canvasVAO);
+    glDisable(GL_DEPTH_TEST);
+
+    GLuint currentTexture = mainBuffer.texture;
+
+    for (size_t i = 0; i < shaders.size(); ++i) {
+        bindPostProcessBuffer(i);
+
+        glUseProgram(shaders[i]);
+        glUniform1i(glGetUniformLocation(shaders[i], "inputTexture"), 0);
+        glUniform2f(glGetUniformLocation(shaders[i], "screenSize"), static_cast<float>(SCR_WIDTH), static_cast<float>(SCR_HEIGHT));
 
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, currentTexture);
         glDrawArrays(GL_TRIANGLES, 0, 6);
 
-        currentTexture = multiPassTextures[i];
+        currentTexture = postProcessBuffers[i].texture;
+    }
+}
+
+void framebuffer::renderFinalOutput(GLuint finalShader, bool usePostProcess) {
+    bindDefaultFramebuffer();
+    glUseProgram(finalShader);
+    glBindVertexArray(canvasVAO);
+    glDisable(GL_DEPTH_TEST);
+
+    glActiveTexture(GL_TEXTURE0);
+    if (usePostProcess && !postProcessBuffers.empty()) {
+        glBindTexture(GL_TEXTURE_2D, postProcessBuffers.back().texture);
+    }
+    else {
+        glBindTexture(GL_TEXTURE_2D, mainBuffer.texture);
     }
 
-    //framebuffer pass render
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glUseProgram(shaderPrograms.back());
-    glUniform1i(glGetUniformLocation(shaderPrograms.back(), "inputTexture"), 0);
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, currentTexture);
+    glUniform1i(glGetUniformLocation(finalShader, "screenTexture"), 0);
     glDrawArrays(GL_TRIANGLES, 0, 6);
 }
 
-framebuffer::~framebuffer() {
-    glDeleteVertexArrays(1, &framebufferVAO);
-    glDeleteBuffers(1, &framebufferVBO);
-    glDeleteFramebuffers(1, &FBO);
-    glDeleteRenderbuffers(1, &RBO);
-    glDeleteTextures(NUMBER_OF_FRAMEBUFFERTEXTURES, framebufferTexture);
-
-    //multipass cleanup
-    if (!multiPassFBOs.empty()) {
-        glDeleteFramebuffers(multiPassFBOs.size(), multiPassFBOs.data());
+GLuint framebuffer::getPostProcessTexture(int index) const {
+    if (index >= 0 && index < postProcessBuffers.size()) {
+        return postProcessBuffers[index].texture;
     }
-    if (!multiPassTextures.empty()) {
-        glDeleteTextures(multiPassTextures.size(), multiPassTextures.data());
-    }
+    return 0;
 }

@@ -1,48 +1,62 @@
 #pragma once
-
 #include <glad/glad.h>
 #include <vector>
+#include <memory>
 
 class framebuffer {
 private:
-    void createTextures(int index);
-    int SCR_WIDTH, SCR_HEIGHT;
-    const int NUMBER_OF_FRAMEBUFFERTEXTURES = 1;
+    struct framebufferObject {
+        GLuint fbo = 0;
+        GLuint texture = 0;
+        GLuint rbo = 0;
+    };
 
-    unsigned int FBO{}, RBO{};
-    unsigned int framebufferVAO{}, framebufferVBO{};
+    const int SCR_WIDTH;
+    const int SCR_HEIGHT;
 
-    unsigned int framebufferTexture[1];
-
-    //CCW winding order
-    const float framebufferVertices[24] = {
+    //old framebuffer VAO/VBO
+    GLuint canvasVAO = 0;
+    GLuint canvasVBO = 0;
+    static constexpr float canvasVertices[24] = {
         -1.0f,  1.0f,  0.0f, 1.0f,
         -1.0f, -1.0f,  0.0f, 0.0f,
          1.0f, -1.0f,  1.0f, 0.0f,
-
         -1.0f,  1.0f,  0.0f, 1.0f,
          1.0f, -1.0f,  1.0f, 0.0f,
          1.0f,  1.0f,  1.0f, 1.0f
     };
 
-    //multi pass
-    std::vector<GLuint> multiPassFBOs;
-    std::vector<GLuint> multiPassTextures;
+    //base framebuffer
+    framebufferObject mainBuffer;
+
+    //multichain
+    std::vector<framebufferObject> postProcessBuffers;
+
+    void setupCanvas();
+    //to powinno byc prywante!
+    void createFramebufferObject(framebufferObject& fbo);
+    void deleteFramebufferObject(framebufferObject& fbo);
 
 public:
-    framebuffer(int SCR_WIDTH, int SCR_HEIGHT);
+    framebuffer(int screenWidth, int screenHeight);
     ~framebuffer();
 
-    //framebuffer setup
-    int getNumberOfTextures() const;
-    void createFramebuffer();
-    void bindFramebuffer() const;
-    void unbindFramebuffer() const;
-    void postProcess(unsigned int framebufferShaderProgram) const;
+    //
+    framebuffer(const framebuffer&) = delete;
+    framebuffer& operator=(const framebuffer&) = delete;
 
-    //multi pass
-    void createMultiPassFramebuffers(int numberOfPasses);
-    void bindMultiPassFramebuffer(int framebufferPassIndex);
-    GLuint getMultiPassTexture(int framebufferPassIndex) const;
-    void postProcessingChain(const std::vector<unsigned int>& shaderPrograms);
+    void initialize();
+    void setupPostProcessing(int numberOfPasses);
+
+    void bindMainFramebuffer() const;
+    void bindPostProcessBuffer(int index);
+    void bindDefaultFramebuffer() const;
+
+    //post processing methods
+    void renderToScreen(GLuint shader) const;
+    void postProcessingChain(const std::vector<GLuint>& shaders);
+    void renderFinalOutput(GLuint finalShader, bool usePostProcess = true);
+
+    GLuint getMainColorTexture() const { return mainBuffer.texture; }
+    GLuint getPostProcessTexture(int index) const;
 };
