@@ -16,6 +16,9 @@ private:
 	unsigned int vertexShader, fragmentShader, geometryShader, shaderProgram;
 	unsigned int framebufferUniversalVertexShader, framebufferBasicFragmentShader, framebufferBasicShaderProgram;
 	unsigned int blurFragmentShader, blurShaderProgram;
+	unsigned int BAndWFragmentShader, BAndWShaderProgram;
+	unsigned int intensityGradientFragmentShader, intensityGradientShaderProgram;
+	unsigned int magnitudeThreasholdingFragmentShader, magnitudeThreasholdingShaderProgram;
 
 	void checkCompileErrors(GLuint shader, std::string type);
 	std::unordered_map<std::string, std::string> loadShaderFiles(const std::vector<std::string>& shaderFiles);
@@ -26,7 +29,12 @@ public:
 	void use(unsigned int shaderProgramID) const;
 	unsigned int shaderProgramID() const;
 	unsigned int framebufferShaderProgramID() const;
+
 	unsigned int blurShaderProgramID() const;
+	unsigned int blackAndWhiteShaderProgramID() const;
+	unsigned int intensityGradientShaderProgramID() const;
+	unsigned int magnitudeThreasholdingShaderProgramID() const;
+
 	void setMat4(const std::string& name, const glm::mat4& mat) const;
 	void setInt(unsigned int shaderProgramID, const std::string& name, int value) const;
 };

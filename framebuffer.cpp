@@ -127,6 +127,7 @@ void framebuffer::postProcessingChain(const std::vector<GLuint>& shaders) {
     }
 }
 
+//true to use the chain, false to just use base framebuffer
 void framebuffer::renderFinalOutput(GLuint finalShader, bool usePostProcess) {
     bindDefaultFramebuffer();
     glUseProgram(finalShader);

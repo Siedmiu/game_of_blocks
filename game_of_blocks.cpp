@@ -43,7 +43,7 @@ const int SCR_HEIGHT = 1080; //720
 const float FOV = 70.0f;
 const float TIMESTEP = 1.0f / 60.0f;
 
-bool blurEnabled = true;
+bool cannyEdgeDetection = true;
 
 int main() {
     //glfw inicjalizacja
@@ -91,21 +91,27 @@ int main() {
     //frame buffer for post processing effects
     unsigned int mainShader = shaders.shaderProgramID();
     unsigned int basicPostShader = shaders.framebufferShaderProgramID();
+
+    //multi step shaders
+    int numberOfMultistepShaders = 4;
     unsigned int blurShader = shaders.blurShaderProgramID();
+    unsigned int blackAndWhiteShader = shaders.blackAndWhiteShaderProgramID();
+    unsigned int intensityGradientShader = shaders.intensityGradientShaderProgramID();
+    unsigned int magnitudeThreasholdingShader = shaders.magnitudeThreasholdingShaderProgramID();
 
     //set constants
     framebuffer framebuffer(SCR_WIDTH, SCR_HEIGHT);
     //initialize
     framebuffer.initialize();
 
-    if (blurEnabled) {
-        framebuffer.setupPostProcessing(1);
+    if (cannyEdgeDetection) {
+        framebuffer.setupPostProcessing(numberOfMultistepShaders);
     }
     
     shaders.use(basicPostShader);
     shaders.setInt(basicPostShader, "screenTexture", 0);
 
-    //game textures
+    //game textures shift by one for the base framebuffer texture
     TextureLoader textureLoader(1);
     std::vector<std::string> textureFiles = {
         "grass_block_top.png",
@@ -236,12 +242,13 @@ int main() {
         renderer.render(VAO);
 
         //framebuffer post process
-        if (blurEnabled) {
-            std::vector<unsigned int> postProcessShaders = { blurShader };
+        if (cannyEdgeDetection) {
+            std::vector<unsigned int> postProcessShaders = { blurShader, blackAndWhiteShader, intensityGradientShader, magnitudeThreasholdingShader };
             framebuffer.postProcessingChain(postProcessShaders);
 
-            framebuffer.renderFinalOutput(blurShader, true);
+            framebuffer.renderFinalOutput(basicPostShader, true);
         } else {
+            //dont use the chain
             framebuffer.renderFinalOutput(basicPostShader, false);
         }
 
@@ -252,8 +259,14 @@ int main() {
 
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &SSBO);
+
     glDeleteProgram(mainShader);
     glDeleteProgram(basicPostShader);
+
     glDeleteProgram(blurShader);
+    glDeleteProgram(blackAndWhiteShader);
+    glDeleteProgram(intensityGradientShader);
+    glDeleteProgram(magnitudeThreasholdingShader);
+
     glfwTerminate();
 }

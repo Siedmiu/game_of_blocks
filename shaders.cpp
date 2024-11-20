@@ -8,7 +8,10 @@ shaders::shaders() {
         "geometry_shader.glsl",
         "framebuffer_basic_fragment_shader.glsl",
         "framebuffer_universal_vertex_shader.glsl",
-        "fb_fs_blur.glsl"
+        "fb_fs_blur.glsl",
+        "fb_fs_B_and_W.glsl",
+        "fb_fs_intensity_gradient.glsl",
+        "fb_fs_magnitude_thresholding.glsl"
     };
 
     auto shaderCodes = loadShaderFiles(shaderFiles);
@@ -16,9 +19,14 @@ shaders::shaders() {
     const char* vertexShaderCode = shaderCodes["vertex_shader.glsl"].c_str();
     const char* fragmentShaderCode = shaderCodes["fragment_shader.glsl"].c_str();
     const char* geometryShaderCode = shaderCodes["geometry_shader.glsl"].c_str();
+
     const char* framebufferBasicFragmentShaderCode = shaderCodes["framebuffer_basic_fragment_shader.glsl"].c_str();
     const char* framebufferUniversalVertexShaderCode = shaderCodes["framebuffer_universal_vertex_shader.glsl"].c_str();
+
     const char* blurFragmentShaderCode = shaderCodes["fb_fs_blur.glsl"].c_str();
+    const char* BAndWFragmentShaderCode = shaderCodes["fb_fs_B_and_W.glsl"].c_str();
+    const char* intensityGradientFragmentShaderCode = shaderCodes["fb_fs_intensity_gradient.glsl"].c_str();
+    const char* magnitudeThreasholdingFragmentShaderCode = shaderCodes["fb_fs_magnitude_thresholding.glsl"].c_str();
 
     //BASE SHADER
     //id shadera
@@ -66,7 +74,7 @@ shaders::shaders() {
     glAttachShader(framebufferBasicShaderProgram, framebufferUniversalVertexShader);
     glAttachShader(framebufferBasicShaderProgram, framebufferBasicFragmentShader);
     glLinkProgram(framebufferBasicShaderProgram);
-    checkCompileErrors(framebufferBasicShaderProgram, "FRAMEBUFFER_PROGRAM");
+    checkCompileErrors(framebufferBasicShaderProgram, "PROGRAM");
 
     glDeleteShader(framebufferBasicFragmentShader);
 
@@ -80,9 +88,51 @@ shaders::shaders() {
     glAttachShader(blurShaderProgram, framebufferUniversalVertexShader);
     glAttachShader(blurShaderProgram, blurFragmentShader);
     glLinkProgram(blurShaderProgram);
-    checkCompileErrors(blurShaderProgram, "BLUR_PROGRAM");
+    checkCompileErrors(blurShaderProgram, "PROGRAM");
 
     glDeleteShader(blurFragmentShader);
+
+    //B&W SHADER
+    BAndWFragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(BAndWFragmentShader, 1, &BAndWFragmentShaderCode, NULL);
+    glCompileShader(BAndWFragmentShader);
+    checkCompileErrors(BAndWFragmentShader, "BW_FRAGMENT");
+
+    BAndWShaderProgram = glCreateProgram();
+    glAttachShader(BAndWShaderProgram, framebufferUniversalVertexShader);
+    glAttachShader(BAndWShaderProgram, BAndWFragmentShader);
+    glLinkProgram(BAndWShaderProgram);
+    checkCompileErrors(BAndWShaderProgram, "PROGRAM");
+
+    glDeleteShader(BAndWFragmentShader);
+
+    //INTENSITY GRADIENT SHADER
+    intensityGradientFragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(intensityGradientFragmentShader, 1, &intensityGradientFragmentShaderCode, NULL);
+    glCompileShader(intensityGradientFragmentShader);
+    checkCompileErrors(intensityGradientFragmentShader, "IGS_FRAGMENT");
+
+    intensityGradientShaderProgram = glCreateProgram();
+    glAttachShader(intensityGradientShaderProgram, framebufferUniversalVertexShader);
+    glAttachShader(intensityGradientShaderProgram, intensityGradientFragmentShader);
+    glLinkProgram(intensityGradientShaderProgram);
+    checkCompileErrors(intensityGradientShaderProgram, "PROGRAM");
+
+    glDeleteShader(intensityGradientFragmentShader);
+
+    //MAGNITUDE THREASHOLDING SHADER
+    magnitudeThreasholdingFragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(magnitudeThreasholdingFragmentShader, 1, &magnitudeThreasholdingFragmentShaderCode, NULL);
+    glCompileShader(magnitudeThreasholdingFragmentShader);
+    checkCompileErrors(magnitudeThreasholdingFragmentShader, "MT_FRAGMENT");
+
+    magnitudeThreasholdingShaderProgram = glCreateProgram();
+    glAttachShader(magnitudeThreasholdingShaderProgram, framebufferUniversalVertexShader);
+    glAttachShader(magnitudeThreasholdingShaderProgram, magnitudeThreasholdingFragmentShader);
+    glLinkProgram(magnitudeThreasholdingShaderProgram);
+    checkCompileErrors(magnitudeThreasholdingShaderProgram, "PROGRAM");
+
+    glDeleteShader(magnitudeThreasholdingFragmentShader);
 
     //delete universal vertex shader
     glDeleteShader(framebufferUniversalVertexShader);
@@ -125,6 +175,18 @@ unsigned int shaders::blurShaderProgramID() const {
     return blurShaderProgram;
 }
 
+unsigned int shaders::blackAndWhiteShaderProgramID() const {
+    return BAndWShaderProgram;
+}
+
+unsigned int shaders::intensityGradientShaderProgramID() const {
+    return intensityGradientShaderProgram;
+}
+
+unsigned int shaders::magnitudeThreasholdingShaderProgramID() const {
+    return magnitudeThreasholdingShaderProgram;
+}
+
 void shaders::use(unsigned int shaderProgramID) const {
     glUseProgram(shaderProgramID);
 }
@@ -138,7 +200,7 @@ void shaders::setMat4(const std::string& name, const glm::mat4& mat) const {
 void shaders::checkCompileErrors(GLuint shader, std::string type) {
     GLint success;
     GLchar infoLog[1024];
-    if (type != "PROGRAM" && type != "FRAMEBUFFER_PROGRAM" && type != "BLUR_PROGRAM")
+    if (type != "PROGRAM")
     {
         glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
         if (!success)

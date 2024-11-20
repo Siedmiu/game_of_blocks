@@ -167,6 +167,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="fb_fs_blur.glsl" />
+    <None Include="fb_fs_B_and_W.glsl" />
+    <None Include="fb_fs_intensity_gradient.glsl" />
+    <None Include="fb_fs_magnitude_thresholding.glsl" />
     <None Include="fragment_shader.glsl" />
     <None Include="framebuffer_basic_fragment_shader.glsl" />
     <None Include="framebuffer_universal_vertex_shader.glsl" />
