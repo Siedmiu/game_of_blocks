@@ -30,4 +30,5 @@ void main() {
 	}
 
 	fColour = vec4(colourRGB / kernelSum, 1.0f);
+	//fColour = texture(inputTexture, fTexCoords);
 }

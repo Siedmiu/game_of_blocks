@@ -45,6 +45,7 @@ const float FOV = 70.0f;
 const float TIMESTEP = 1.0f / 60.0f;
 
 bool blurEnabled = true;
+bool basePostProcess = false;
 
 int main() {
     //glfw inicjalizacja
@@ -56,7 +57,7 @@ int main() {
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
 
     //tworzenie glfw window instance
-    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "kloce", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "kloce", glfwGetPrimaryMonitor(), NULL);
     if (window == NULL) {
         std::cout << "Stworzenie okna GLFW nieudane" << std::endl;
         glfwTerminate();
@@ -250,7 +251,7 @@ int main() {
         if (blurEnabled) {
             framebuffer.postProcessingChain(postProcessShaders);
         }
-        else {
+        else if (basePostProcess) {
             framebuffer.postProcess(framebufferBasicShaderProgram);
         }
 

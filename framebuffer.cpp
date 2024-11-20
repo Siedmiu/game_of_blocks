@@ -72,6 +72,9 @@ void framebuffer::postProcess(unsigned int framebufferShaderProgram) const {
     glBindVertexArray(framebufferVAO);
     glDisable(GL_DEPTH_TEST);
 
+    glUniform1i(glGetUniformLocation(framebufferShaderProgram, "screenTexture0"), 0);
+
+    glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, framebufferTexture[0]);
     glDrawArrays(GL_TRIANGLES, 0, 6);
 }
