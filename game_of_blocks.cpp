@@ -44,6 +44,8 @@ const int SCR_HEIGHT = 1080; //720
 const float FOV = 70.0f;
 const float TIMESTEP = 1.0f / 60.0f;
 
+bool blurEnabled = true;
+
 int main() {
     //glfw inicjalizacja
     glfwInit();
@@ -87,19 +89,31 @@ int main() {
     //kompilacja shaderow
     shaders shaders;
 
-    unsigned int shaderProgram, framebufferShaderProgram;
+    unsigned int shaderProgram, framebufferBasicShaderProgram;
+    unsigned int blurShaderProgram;
     shaderProgram = shaders.shaderProgramID();
-    framebufferShaderProgram = shaders.framebufferShaderProgramID();
+    framebufferBasicShaderProgram = shaders.framebufferShaderProgramID();
+    //multi pass buffers:
+    const int NUMBER_OF_MULTIPASS_BUFFERS = 1;
+    blurShaderProgram = shaders.blurShaderProgramID();
 
     //frame buffer and its texture for post processing effects
-    shaders.use(framebufferShaderProgram);
+    shaders.use(framebufferBasicShaderProgram);
 
     framebuffer framebuffer(SCR_WIDTH, SCR_HEIGHT);
     framebuffer.createFramebuffer();
 
+    framebuffer.createMultiPassFramebuffers(NUMBER_OF_MULTIPASS_BUFFERS);
+
     int textureOffset = framebuffer.getNumberOfTextures();
 
-    for (int i = 0; i < textureOffset; i++) shaders.setInt(framebufferShaderProgram, "screenTexture" + std::to_string(i), i);
+    std::vector<unsigned int> postProcessShaders = {
+        blurShaderProgram
+    };
+
+    for (int i = 0; i < textureOffset; i++) shaders.setInt(framebufferBasicShaderProgram, "screenTexture" + std::to_string(i), i);
+
+    textureOffset += NUMBER_OF_MULTIPASS_BUFFERS;
 
     //tekstury
     TextureLoader textureLoader(textureOffset);
@@ -233,7 +247,12 @@ int main() {
 
         //framebuffer post process
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        framebuffer.postProcess(framebufferShaderProgram);
+        if (blurEnabled) {
+            framebuffer.postProcessingChain(postProcessShaders);
+        }
+        else {
+            framebuffer.postProcess(framebufferBasicShaderProgram);
+        }
 
         // (podwojny buffer), sprawdzanie eventow
         glfwSwapBuffers(window);
@@ -243,7 +262,8 @@ int main() {
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &SSBO);
     glDeleteProgram(shaderProgram);
-    glDeleteProgram(framebufferShaderProgram);
+    glDeleteProgram(framebufferBasicShaderProgram);
+    glDeleteProgram(blurShaderProgram);
 
     glfwTerminate();
 }

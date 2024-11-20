@@ -86,22 +86,13 @@
   </ItemGroup>
   <ItemGroup>
     <Text Include="chrono.txt" />
-    <Text Include="vertex_shader.glsl" />
-    <Text Include="fragment_shader.glsl" />
-    <Text Include="geometry_shader.glsl" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="framebuffer_fragment_shader.glsl" />
-    <None Include="framebuffer_vertex_shader.glsl" />
-    <None Include="shaders\fragment_shader.glsl" />
-    <None Include="shaders\framebuffer_fragment_shader.glsl" />
-    <None Include="shaders\framebuffer_vertex_shader.glsl" />
-    <None Include="shaders\geometry_shader.glsl" />
-    <None Include="shaders\vertex_shader.glsl" />
-    <None Include="..\shaders\fragment_shader.glsl" />
-    <None Include="..\shaders\framebuffer_fragment_shader.glsl" />
-    <None Include="..\shaders\framebuffer_vertex_shader.glsl" />
-    <None Include="..\shaders\geometry_shader.glsl" />
-    <None Include="..\shaders\vertex_shader.glsl" />
+    <None Include="fragment_shader.glsl" />
+    <None Include="framebuffer_basic_fragment_shader.glsl" />
+    <None Include="framebuffer_universal_vertex_shader.glsl" />
+    <None Include="geometry_shader.glsl" />
+    <None Include="vertex_shader.glsl" />
+    <None Include="fb_fs_blur.glsl" />
   </ItemGroup>
 </Project>

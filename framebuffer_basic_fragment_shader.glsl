@@ -7,7 +7,7 @@ uniform sampler2D screenTexture0;
 
 const bool BLACK_AND_WHITE = false;
 const bool INVERSE_COLOURS = false;
-const bool EDGE_DETECTION = true;
+const bool EDGE_DETECTION = false;
 
 const float PIXEL_WIDTH_OFFSET = 1.0f / 1920.0f;
 const float PIXEL_HEIGHT_OFFSET = 1.0f / 1080.0f;
@@ -19,9 +19,9 @@ const vec2 PIXEL_OFFSETS_3x3[9] = vec2[] (
 );
 
 const float EDGE_DETECTION_KERNEL_3x3[9] = float[] (
-	1,  1, 1,
-	1, -8, 1,
-	1,  1, 1
+	1.0f,  1.0f, 1.0f,
+	1.0f, -8.0f, 1.0f,
+	1.0f,  1.0f, 1.0f
 );
 
 void main() {

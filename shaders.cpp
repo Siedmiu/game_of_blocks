@@ -6,8 +6,9 @@ shaders::shaders() {
         "vertex_shader.glsl",
         "fragment_shader.glsl",
         "geometry_shader.glsl",
-        "framebuffer_fragment_shader.glsl",
-        "framebuffer_vertex_shader.glsl"
+        "framebuffer_basic_fragment_shader.glsl",
+        "framebuffer_universal_vertex_shader.glsl",
+        "fb_fs_blur.glsl"
     };
 
     auto shaderCodes = loadShaderFiles(shaderFiles);
@@ -15,8 +16,9 @@ shaders::shaders() {
     const char* vertexShaderCode = shaderCodes["vertex_shader.glsl"].c_str();
     const char* fragmentShaderCode = shaderCodes["fragment_shader.glsl"].c_str();
     const char* geometryShaderCode = shaderCodes["geometry_shader.glsl"].c_str();
-    const char* framebufferFragmentShaderCode = shaderCodes["framebuffer_fragment_shader.glsl"].c_str();
-    const char* framebufferVertexShaderCode = shaderCodes["framebuffer_vertex_shader.glsl"].c_str();
+    const char* framebufferBasicFragmentShaderCode = shaderCodes["framebuffer_basic_fragment_shader.glsl"].c_str();
+    const char* framebufferUniversalVertexShaderCode = shaderCodes["framebuffer_universal_vertex_shader.glsl"].c_str();
+    const char* blurFragmentShaderCode = shaderCodes["fb_fs_blur.glsl"].c_str();
 
     //BASE SHADER
     //id shadera
@@ -48,25 +50,42 @@ shaders::shaders() {
     glDeleteShader(fragmentShader);
     glDeleteShader(geometryShader);
 
-    //FRAMEBUFFER SHADER
-    framebufferVertexShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(framebufferVertexShader, 1, &framebufferVertexShaderCode, NULL);
-    glCompileShader(framebufferVertexShader);
-    checkCompileErrors(framebufferVertexShader, "FRAMEBUFFER_VERTEX");
+    //UNIVERSAL VERTEX SHADER
+    framebufferUniversalVertexShader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(framebufferUniversalVertexShader, 1, &framebufferUniversalVertexShaderCode, NULL);
+    glCompileShader(framebufferUniversalVertexShader);
+    checkCompileErrors(framebufferUniversalVertexShader, "FRAMEBUFFER_VERTEX");
 
-    framebufferFragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(framebufferFragmentShader, 1, &framebufferFragmentShaderCode, NULL);
-    glCompileShader(framebufferFragmentShader);
-    checkCompileErrors(framebufferFragmentShader, "FRAMEBUFFER_FRAGMENT");
+    //BASIC FRAMEBUFFER SHADER
+    framebufferBasicFragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(framebufferBasicFragmentShader, 1, &framebufferBasicFragmentShaderCode, NULL);
+    glCompileShader(framebufferBasicFragmentShader);
+    checkCompileErrors(framebufferBasicFragmentShader, "FRAMEBUFFER_FRAGMENT");
 
-    framebufferShaderProgram = glCreateProgram();
-    glAttachShader(framebufferShaderProgram, framebufferVertexShader);
-    glAttachShader(framebufferShaderProgram, framebufferFragmentShader);
-    glLinkProgram(framebufferShaderProgram);
-    checkCompileErrors(framebufferShaderProgram, "FRAMEBUFFER_PROGRAM");
+    framebufferBasicShaderProgram = glCreateProgram();
+    glAttachShader(framebufferBasicShaderProgram, framebufferUniversalVertexShader);
+    glAttachShader(framebufferBasicShaderProgram, framebufferBasicFragmentShader);
+    glLinkProgram(framebufferBasicShaderProgram);
+    checkCompileErrors(framebufferBasicShaderProgram, "FRAMEBUFFER_PROGRAM");
 
-    glDeleteShader(framebufferVertexShader);
-    glDeleteShader(framebufferFragmentShader);
+    glDeleteShader(framebufferBasicFragmentShader);
+
+    //BLUR SHADER
+    blurFragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(blurFragmentShader, 1, &blurFragmentShaderCode, NULL);
+    glCompileShader(blurFragmentShader);
+    checkCompileErrors(blurFragmentShader, "BLUR_FRAGMENT");
+
+    blurShaderProgram = glCreateProgram();
+    glAttachShader(blurShaderProgram, framebufferUniversalVertexShader);
+    glAttachShader(blurShaderProgram, blurFragmentShader);
+    glLinkProgram(blurShaderProgram);
+    checkCompileErrors(blurShaderProgram, "BLUR_PROGRAM");
+
+    glDeleteShader(blurFragmentShader);
+
+    //delete universal vertex shader
+    glDeleteShader(framebufferUniversalVertexShader);
 }
 
 std::unordered_map<std::string, std::string> shaders::loadShaderFiles(const std::vector<std::string>& shaderFiles) {
@@ -99,7 +118,11 @@ unsigned int shaders::shaderProgramID() const {
 }
 
 unsigned int shaders::framebufferShaderProgramID() const {
-    return framebufferShaderProgram;
+    return framebufferBasicShaderProgram;
+}
+
+unsigned int shaders::blurShaderProgramID() const {
+    return blurShaderProgram;
 }
 
 void shaders::use(unsigned int shaderProgramID) const {
@@ -115,7 +138,7 @@ void shaders::setMat4(const std::string& name, const glm::mat4& mat) const {
 void shaders::checkCompileErrors(GLuint shader, std::string type) {
     GLint success;
     GLchar infoLog[1024];
-    if (type != "PROGRAM" && type != "FRAMEBUFFER_PROGRAM")
+    if (type != "PROGRAM" && type != "FRAMEBUFFER_PROGRAM" && type != "BLUR_PROGRAM")
     {
         glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
         if (!success)

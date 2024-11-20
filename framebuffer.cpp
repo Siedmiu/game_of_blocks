@@ -134,7 +134,10 @@ void framebuffer::postProcessingChain(const std::vector<unsigned int>& shaderPro
     for (size_t i = 0; i < shaderPrograms.size(); ++i) {
         bindMultiPassFramebuffer(i);
         glUseProgram(shaderPrograms[i]);
+        glUniform1i(glGetUniformLocation(shaderPrograms[i], "inputTexture"), 0);
+        glUniform2f(glGetUniformLocation(shaderPrograms[i], "screenSize"), static_cast<float>(SCR_WIDTH), static_cast<float>(SCR_HEIGHT));
 
+        glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, currentTexture);
         glDrawArrays(GL_TRIANGLES, 0, 6);
 
@@ -144,6 +147,8 @@ void framebuffer::postProcessingChain(const std::vector<unsigned int>& shaderPro
     //framebuffer pass render
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glUseProgram(shaderPrograms.back());
+    glUniform1i(glGetUniformLocation(shaderPrograms.back(), "inputTexture"), 0);
+    glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, currentTexture);
     glDrawArrays(GL_TRIANGLES, 0, 6);
 }
