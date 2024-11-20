@@ -48,6 +48,9 @@
     <ClCompile Include="errorReporting.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="framebuffer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="camera.h">
@@ -65,9 +68,6 @@
     <ClInclude Include="stb_image.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="uniformSetters.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="window.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -80,11 +80,19 @@
     <ClInclude Include="errorReporting.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="framebuffer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="chrono.txt" />
-    <Text Include="vertex_shader.glsl" />
-    <Text Include="fragment_shader.glsl" />
-    <Text Include="geometry_shader.glsl" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="fragment_shader.glsl" />
+    <None Include="framebuffer_basic_fragment_shader.glsl" />
+    <None Include="framebuffer_universal_vertex_shader.glsl" />
+    <None Include="geometry_shader.glsl" />
+    <None Include="vertex_shader.glsl" />
+    <None Include="fb_fs_blur.glsl" />
   </ItemGroup>
 </Project>

@@ -52,13 +52,10 @@ const float blockVertices[120] = {
 	// ^ top ^
 };
 
-void createVertex(vec3 offset, vec2 texCoord) {
-    vec4 blockPos = gl_in[0].gl_Position + vec4(offset, 0.0);
-    gl_Position = projection * view * model * blockPos;
-    TexCoord = texCoord;
-    FragTexID = v_TexID[0];
-    EmitVertex();
-}
+const bool CALCULATE_CURVATURE = true;
+const float WORLD_CURVATURE_RATE = 0.002f;
+
+void createVertex(vec3 offset, vec2 texCoord);
 
 void main() {
     vec3 basePos = gl_in[0].gl_Position.xyz;
@@ -77,4 +74,23 @@ void main() {
 	vec2(blockVertices[3 + 15 + 20 * v_faceDirection[0]], blockVertices[4 + 15 + 20 * v_faceDirection[0]]));
 
     EndPrimitive();
+}
+
+void createVertex(vec3 offset, vec2 texCoord) {
+    vec4 blockPos = gl_in[0].gl_Position + vec4(offset, 0.0);
+
+	if (CALCULATE_CURVATURE) {
+        vec4 posView = view * model * blockPos;
+        
+        float fragmentDist = length(posView.xyz);
+        float curvedY = posView.y - WORLD_CURVATURE_RATE * fragmentDist * fragmentDist;
+        posView.y = curvedY;
+        
+        gl_Position = projection * posView;
+	} else
+    gl_Position = projection * view * model * blockPos;
+
+    TexCoord = texCoord;
+    FragTexID = v_TexID[0];
+    EmitVertex();
 }

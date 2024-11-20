@@ -140,6 +140,7 @@
     <ClCompile Include="..\src\glad.c" />
     <ClCompile Include="camera.cpp" />
     <ClCompile Include="errorReporting.cpp" />
+    <ClCompile Include="framebuffer.cpp" />
     <ClCompile Include="game_of_blocks.cpp" />
     <ClCompile Include="player.cpp" />
     <ClCompile Include="renderer.cpp" />
@@ -152,20 +153,25 @@
   <ItemGroup>
     <ClInclude Include="camera.h" />
     <ClInclude Include="errorReporting.h" />
+    <ClInclude Include="framebuffer.h" />
     <ClInclude Include="player.h" />
     <ClInclude Include="renderer.h" />
     <ClInclude Include="shaders.h" />
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="texture_loader.h" />
-    <ClInclude Include="uniformSetters.h" />
     <ClInclude Include="window.h" />
     <ClInclude Include="world.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="chrono.txt" />
-    <Text Include="fragment_shader.glsl" />
-    <Text Include="geometry_shader.glsl" />
-    <Text Include="vertex_shader.glsl" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="fb_fs_blur.glsl" />
+    <None Include="fragment_shader.glsl" />
+    <None Include="framebuffer_basic_fragment_shader.glsl" />
+    <None Include="framebuffer_universal_vertex_shader.glsl" />
+    <None Include="geometry_shader.glsl" />
+    <None Include="vertex_shader.glsl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
