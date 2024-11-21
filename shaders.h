@@ -19,6 +19,7 @@ private:
 	unsigned int BAndWFragmentShader, BAndWShaderProgram;
 	unsigned int intensityGradientFragmentShader, intensityGradientShaderProgram;
 	unsigned int magnitudeThreasholdingFragmentShader, magnitudeThreasholdingShaderProgram;
+	unsigned int edgeTrackingByHysteresisFragmentShader, edgeTrackingByHysteresisShaderProgram;
 
 	void checkCompileErrors(GLuint shader, std::string type);
 	std::unordered_map<std::string, std::string> loadShaderFiles(const std::vector<std::string>& shaderFiles);
@@ -34,6 +35,7 @@ public:
 	unsigned int blackAndWhiteShaderProgramID() const;
 	unsigned int intensityGradientShaderProgramID() const;
 	unsigned int magnitudeThreasholdingShaderProgramID() const;
+	unsigned int edgeTrackingByHysteresisShaderProgramID() const;
 
 	void setMat4(const std::string& name, const glm::mat4& mat) const;
 	void setInt(unsigned int shaderProgramID, const std::string& name, int value) const;

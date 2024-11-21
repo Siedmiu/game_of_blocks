@@ -93,11 +93,12 @@ int main() {
     unsigned int basicPostShader = shaders.framebufferShaderProgramID();
 
     //multi step shaders
-    int numberOfMultistepShaders = 4;
+    int numberOfMultistepShaders = 5;
     unsigned int blurShader = shaders.blurShaderProgramID();
     unsigned int blackAndWhiteShader = shaders.blackAndWhiteShaderProgramID();
     unsigned int intensityGradientShader = shaders.intensityGradientShaderProgramID();
     unsigned int magnitudeThreasholdingShader = shaders.magnitudeThreasholdingShaderProgramID();
+    unsigned int edgeTrackingByHysteresisShader = shaders.edgeTrackingByHysteresisShaderProgramID();
 
     //set constants
     framebuffer framebuffer(SCR_WIDTH, SCR_HEIGHT);
@@ -243,7 +244,9 @@ int main() {
 
         //framebuffer post process
         if (cannyEdgeDetection) {
-            std::vector<unsigned int> postProcessShaders = { blurShader, blackAndWhiteShader, intensityGradientShader, magnitudeThreasholdingShader };
+            std::vector<unsigned int> postProcessShaders = {
+            blurShader, blackAndWhiteShader, intensityGradientShader, magnitudeThreasholdingShader, edgeTrackingByHysteresisShader };
+            
             framebuffer.postProcessingChain(postProcessShaders);
 
             framebuffer.renderFinalOutput(basicPostShader, true);
@@ -267,6 +270,7 @@ int main() {
     glDeleteProgram(blackAndWhiteShader);
     glDeleteProgram(intensityGradientShader);
     glDeleteProgram(magnitudeThreasholdingShader);
+    glDeleteProgram(edgeTrackingByHysteresisShader);
 
     glfwTerminate();
 }

@@ -11,7 +11,8 @@ shaders::shaders() {
         "fb_fs_blur.glsl",
         "fb_fs_B_and_W.glsl",
         "fb_fs_intensity_gradient.glsl",
-        "fb_fs_magnitude_thresholding.glsl"
+        "fb_fs_magnitude_thresholding.glsl",
+        "fb_fs_hysteresis.glsl"
     };
 
     auto shaderCodes = loadShaderFiles(shaderFiles);
@@ -27,6 +28,7 @@ shaders::shaders() {
     const char* BAndWFragmentShaderCode = shaderCodes["fb_fs_B_and_W.glsl"].c_str();
     const char* intensityGradientFragmentShaderCode = shaderCodes["fb_fs_intensity_gradient.glsl"].c_str();
     const char* magnitudeThreasholdingFragmentShaderCode = shaderCodes["fb_fs_magnitude_thresholding.glsl"].c_str();
+    const char* edgeTrackingByHysteresisFragmentShaderCode = shaderCodes["fb_fs_hysteresis.glsl"].c_str();
 
     //BASE SHADER
     //id shadera
@@ -134,6 +136,20 @@ shaders::shaders() {
 
     glDeleteShader(magnitudeThreasholdingFragmentShader);
 
+    //EDGE TRACKING BY HYSTERESIS
+    edgeTrackingByHysteresisFragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(edgeTrackingByHysteresisFragmentShader, 1, &edgeTrackingByHysteresisFragmentShaderCode, NULL);
+    glCompileShader(edgeTrackingByHysteresisFragmentShader);
+    checkCompileErrors(edgeTrackingByHysteresisFragmentShader, "MT_FRAGMENT");
+
+    edgeTrackingByHysteresisShaderProgram = glCreateProgram();
+    glAttachShader(edgeTrackingByHysteresisShaderProgram, framebufferUniversalVertexShader);
+    glAttachShader(edgeTrackingByHysteresisShaderProgram, edgeTrackingByHysteresisFragmentShader);
+    glLinkProgram(edgeTrackingByHysteresisShaderProgram);
+    checkCompileErrors(edgeTrackingByHysteresisShaderProgram, "PROGRAM");
+
+    glDeleteShader(edgeTrackingByHysteresisFragmentShader);
+
     //delete universal vertex shader
     glDeleteShader(framebufferUniversalVertexShader);
 }
@@ -185,6 +201,10 @@ unsigned int shaders::intensityGradientShaderProgramID() const {
 
 unsigned int shaders::magnitudeThreasholdingShaderProgramID() const {
     return magnitudeThreasholdingShaderProgram;
+}
+
+unsigned int shaders::edgeTrackingByHysteresisShaderProgramID() const {
+    return edgeTrackingByHysteresisShaderProgram;
 }
 
 void shaders::use(unsigned int shaderProgramID) const {
