@@ -24,6 +24,8 @@ private:
 
 	unsigned int basicKuwaharaFragmentShader, basicKuwaharaShaderProgram;
 
+	unsigned int cannyOverlayFragmentShader, cannyOverlayShaderProgram;
+
 	void checkCompileErrors(GLuint shader, std::string type);
 	std::unordered_map<std::string, std::string> loadShaderFiles(const std::vector<std::string>& shaderFiles);
 
@@ -39,7 +41,8 @@ public:
 	unsigned int intensityGradientShaderProgramID() const;
 	unsigned int magnitudeThreasholdingShaderProgramID() const;
 	unsigned int edgeTrackingByHysteresisShaderProgramID() const;
-	unsigned int basicKuwaharaFragmentShaderProgramID() const;
+	unsigned int basicKuwaharaShaderProgramID() const;
+	unsigned int cannyOverlayShaderProgramID() const;
 
 	void setMat4(const std::string& name, const glm::mat4& mat) const;
 	void setInt(unsigned int shaderProgramID, const std::string& name, int value) const;

@@ -127,6 +127,64 @@ void framebuffer::postProcessingChain(const std::vector<GLuint>& shaders) {
     }
 }
 
+void framebuffer::cannyOverlay(const std::vector<GLuint>& cannyShaders, const std::vector<GLuint>& otherShaders, GLuint overlayShader) {
+    if (cannyShaders.empty() || otherShaders.empty() || postProcessBuffers.empty()) return;
+
+    glBindVertexArray(canvasVAO);
+    glDisable(GL_DEPTH_TEST);
+
+    //canny edge detection
+    GLuint cannyResult = mainBuffer.texture;
+    for (size_t i = 0; i < cannyShaders.size(); ++i) {
+        bindPostProcessBuffer(i);
+
+        glUseProgram(cannyShaders[i]);
+        glUniform1i(glGetUniformLocation(cannyShaders[i], "inputTexture"), 0);
+        glUniform2f(glGetUniformLocation(cannyShaders[i], "screenSize"), static_cast<float>(SCR_WIDTH), static_cast<float>(SCR_HEIGHT));
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, cannyResult);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+
+        cannyResult = postProcessBuffers[i].texture;
+    }
+
+    //store Canny result
+    GLuint edgeTexture = cannyResult;
+
+    //other shader multipaas
+    GLuint shaderResult = mainBuffer.texture;
+    size_t shaderOffset = cannyShaders.size();
+
+    for (size_t i = 0; i < otherShaders.size(); ++i) {
+        bindPostProcessBuffer(shaderOffset + i);
+
+        glUseProgram(otherShaders[i]);
+        glUniform1i(glGetUniformLocation(otherShaders[i], "inputTexture"), 0);
+        glUniform2f(glGetUniformLocation(otherShaders[i], "screenSize"), static_cast<float>(SCR_WIDTH), static_cast<float>(SCR_HEIGHT));
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, shaderResult);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+
+        shaderResult = postProcessBuffers[shaderOffset + i].texture;
+    }
+
+    //combine Kuwahara (other) and Canny
+    bindPostProcessBuffer(postProcessBuffers.size() - 1);
+    glUseProgram(overlayShader);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, shaderResult);
+    glUniform1i(glGetUniformLocation(overlayShader, "inputTexture"), 0);
+
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, edgeTexture);
+    glUniform1i(glGetUniformLocation(overlayShader, "cannyTexture"), 1);
+
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+}
+
 //true to use the chain, false to just use base framebuffer
 void framebuffer::renderFinalOutput(GLuint finalShader, bool usePostProcess) {
     bindDefaultFramebuffer();

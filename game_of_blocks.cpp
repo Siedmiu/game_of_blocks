@@ -45,7 +45,8 @@ const float FOV = 70.0f;
 const float TIMESTEP = 1.0f / 60.0f;
 
 bool cannyEdgeDetection = false;
-bool basicKuwahara = true;
+bool basicKuwahara = false;
+bool cannyAndKuwahara = true;
 
 int main() {
     //glfw inicjalizacja
@@ -102,18 +103,21 @@ int main() {
     unsigned int intensityGradientShader = shaders.intensityGradientShaderProgramID();
     unsigned int magnitudeThreasholdingShader = shaders.magnitudeThreasholdingShaderProgramID();
     unsigned int edgeTrackingByHysteresisShader = shaders.edgeTrackingByHysteresisShaderProgramID();
+    //canny overlay
+    unsigned int cannyOverlayShader = shaders.cannyOverlayShaderProgramID();
     //kuwahara
-    unsigned int basicKuwaharaShader = shaders.basicKuwaharaFragmentShaderProgramID();
+    unsigned int basicKuwaharaShader = shaders.basicKuwaharaShaderProgramID();
 
     //set constants
     framebuffer framebuffer(SCR_WIDTH, SCR_HEIGHT);
     //initialize
     framebuffer.initialize();
 
-    if (cannyEdgeDetection) {
+    if (cannyEdgeDetection || cannyAndKuwahara) {
+        if (cannyAndKuwahara) numberOfMultistepShadersCanny += 2;
         framebuffer.setupPostProcessing(numberOfMultistepShadersCanny);
     }
-    if (basicKuwahara) {
+    if (basicKuwahara && !cannyAndKuwahara) {
         framebuffer.setupPostProcessing(1);
     }
     
@@ -121,7 +125,8 @@ int main() {
     shaders.setInt(basicPostShader, "screenTexture", 0);
 
     //game textures shift by one for the base framebuffer texture
-    TextureLoader textureLoader(1);
+    int mainbufferOffset = 2;
+    TextureLoader textureLoader(mainbufferOffset);
     std::vector<std::string> textureFiles = {
         "grass_block_top.png",
         "dirt.png",
@@ -133,7 +138,7 @@ int main() {
 
     shaders.use(mainShader);
     for (int i = 0; i < textures.size(); i++) {
-        shaders.setInt(mainShader, "texturesArray[" + std::to_string(i) + "]", i + 1);
+        shaders.setInt(mainShader, "texturesArray[" + std::to_string(i) + "]", i + mainbufferOffset);
     }
 
     //vertices storage objects
@@ -251,11 +256,21 @@ int main() {
         renderer.render(VAO);
 
         //framebuffer post process
-        if (cannyEdgeDetection) {
-            std::vector<unsigned int> postProcessShaders = {
+        if (cannyAndKuwahara) {
+            std::vector<unsigned int> postProcessShadersCanny = {
+            blurShader, blackAndWhiteShader, intensityGradientShader, magnitudeThreasholdingShader, edgeTrackingByHysteresisShader };
+
+            std::vector<unsigned int> kuwaharaShader = { basicKuwaharaShader };
+
+            //canny, kuwahara and overlay
+            framebuffer.cannyOverlay(postProcessShadersCanny, kuwaharaShader, cannyOverlayShader);
+            framebuffer.renderFinalOutput(basicPostShader, true);
+
+        } else if (cannyEdgeDetection) {
+            std::vector<unsigned int> postProcessShadersCanny = {
             blurShader, blackAndWhiteShader, intensityGradientShader, magnitudeThreasholdingShader, edgeTrackingByHysteresisShader };
             
-            framebuffer.postProcessingChain(postProcessShaders);
+            framebuffer.postProcessingChain(postProcessShadersCanny);
             framebuffer.renderFinalOutput(basicPostShader, true);
 
         }
@@ -287,6 +302,7 @@ int main() {
     glDeleteProgram(magnitudeThreasholdingShader);
     glDeleteProgram(edgeTrackingByHysteresisShader);
     glDeleteProgram(basicKuwaharaShader);
+    glDeleteProgram(cannyOverlayShader);
 
     glfwTerminate();
 }

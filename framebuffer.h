@@ -56,6 +56,7 @@ public:
     void renderToScreen(GLuint shader) const;
     void postProcessingChain(const std::vector<GLuint>& shaders);
     void renderFinalOutput(GLuint finalShader, bool usePostProcess = true);
+    void cannyOverlay(const std::vector<GLuint>& cannyShaders, const std::vector<GLuint>& kuwaharaShaders, GLuint overlayShader);
 
     GLuint getMainColorTexture() const { return mainBuffer.texture; }
     GLuint getPostProcessTexture(int index) const;

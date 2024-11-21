@@ -13,7 +13,8 @@ shaders::shaders() {
         "fb_fs_intensity_gradient.glsl",
         "fb_fs_magnitude_thresholding.glsl",
         "fb_fs_hysteresis.glsl",
-        "fb_fs_Basic_Kuwahara_Filter.glsl"
+        "fb_fs_Basic_Kuwahara_Filter.glsl",
+        "fb_fs_canny_overlay.glsl"
     };
 
     auto shaderCodes = loadShaderFiles(shaderFiles);
@@ -31,6 +32,9 @@ shaders::shaders() {
     const char* magnitudeThreasholdingFragmentShaderCode = shaderCodes["fb_fs_magnitude_thresholding.glsl"].c_str();
     const char* edgeTrackingByHysteresisFragmentShaderCode = shaderCodes["fb_fs_hysteresis.glsl"].c_str();
     const char* basicKuwaharaFragmentShaderCode = shaderCodes["fb_fs_Basic_Kuwahara_Filter.glsl"].c_str();
+    const char* cannyOverlayFragmentShaderCode = shaderCodes["fb_fs_canny_overlay.glsl"].c_str();
+
+    //to trzeba w funkcje zamienic
 
     //BASE SHADER
     //id shadera
@@ -142,7 +146,7 @@ shaders::shaders() {
     edgeTrackingByHysteresisFragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
     glShaderSource(edgeTrackingByHysteresisFragmentShader, 1, &edgeTrackingByHysteresisFragmentShaderCode, NULL);
     glCompileShader(edgeTrackingByHysteresisFragmentShader);
-    checkCompileErrors(edgeTrackingByHysteresisFragmentShader, "MT_FRAGMENT");
+    checkCompileErrors(edgeTrackingByHysteresisFragmentShader, "ET_FRAGMENT");
 
     edgeTrackingByHysteresisShaderProgram = glCreateProgram();
     glAttachShader(edgeTrackingByHysteresisShaderProgram, framebufferUniversalVertexShader);
@@ -156,7 +160,7 @@ shaders::shaders() {
     basicKuwaharaFragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
     glShaderSource(basicKuwaharaFragmentShader, 1, &basicKuwaharaFragmentShaderCode, NULL);
     glCompileShader(basicKuwaharaFragmentShader);
-    checkCompileErrors(basicKuwaharaFragmentShader, "MT_FRAGMENT");
+    checkCompileErrors(basicKuwaharaFragmentShader, "KUWAHARA_FRAGMENT");
 
     basicKuwaharaShaderProgram = glCreateProgram();
     glAttachShader(basicKuwaharaShaderProgram, framebufferUniversalVertexShader);
@@ -165,6 +169,20 @@ shaders::shaders() {
     checkCompileErrors(basicKuwaharaShaderProgram, "PROGRAM");
 
     glDeleteShader(basicKuwaharaFragmentShader);
+
+    //CANNY OVERLAY
+    cannyOverlayFragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(cannyOverlayFragmentShader, 1, &cannyOverlayFragmentShaderCode, NULL);
+    glCompileShader(cannyOverlayFragmentShader);
+    checkCompileErrors(cannyOverlayFragmentShader, "CANNY_OVERLAY_FRAGMENT");
+
+    cannyOverlayShaderProgram = glCreateProgram();
+    glAttachShader(cannyOverlayShaderProgram, framebufferUniversalVertexShader);
+    glAttachShader(cannyOverlayShaderProgram, cannyOverlayFragmentShader);
+    glLinkProgram(cannyOverlayShaderProgram);
+    checkCompileErrors(cannyOverlayShaderProgram, "PROGRAM");
+
+    glDeleteShader(cannyOverlayFragmentShader);
 
     //delete universal vertex shader
     glDeleteShader(framebufferUniversalVertexShader);
@@ -223,8 +241,12 @@ unsigned int shaders::edgeTrackingByHysteresisShaderProgramID() const {
     return edgeTrackingByHysteresisShaderProgram;
 }
 
-unsigned int shaders::basicKuwaharaFragmentShaderProgramID() const {
+unsigned int shaders::basicKuwaharaShaderProgramID() const {
     return basicKuwaharaShaderProgram;
+}
+
+unsigned int shaders::cannyOverlayShaderProgramID() const {
+    return cannyOverlayShaderProgram;
 }
 
 void shaders::use(unsigned int shaderProgramID) const {

@@ -12,7 +12,7 @@ class player {
 private:
     //they dont all need to be floats
     const float WALKING_ACCELERATION = 20.0f, SPRINTING_ACCELERATION = 40.0f, AIR_RESISTANCE = 10.0f, FLOOR_FRICTION = 10.0f;
-    const float MAX_WALKING_SPEED = 54.3f, MAX_SPRINT_SPEED = 7.1f;
+    const float MAX_WALKING_SPEED = 4.3f, MAX_SPRINT_SPEED = 7.1f;
     const float JUMP_SPEED = 10.0f;
 
     float playerX, playerY, playerZ;
