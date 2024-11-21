@@ -166,6 +166,7 @@
     <Text Include="chrono.txt" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="fb_fs_Basic_Kuwahara_Filter.glsl" />
     <None Include="fb_fs_blur.glsl" />
     <None Include="fb_fs_B_and_W.glsl" />
     <None Include="fb_fs_hysteresis.glsl" />

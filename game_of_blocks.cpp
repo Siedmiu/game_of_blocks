@@ -5,6 +5,7 @@
 //post processing https://www.youtube.com/watch?v=RepvBIfpcwE
 //image processing convolution https://www.youtube.com/watch?v=KuXjwB4LzSA
 //canny edge detection https://en.wikipedia.org/wiki/Canny_edge_detector
+//kuwahara https://www.umsl.edu/~kangh/Papers/kang-tpcg2010.pdf
 
 //do zrobienia
 // kolizja i chodzenie
@@ -43,7 +44,8 @@ const int SCR_HEIGHT = 1080; //720
 const float FOV = 70.0f;
 const float TIMESTEP = 1.0f / 60.0f;
 
-bool cannyEdgeDetection = true;
+bool cannyEdgeDetection = false;
+bool basicKuwahara = true;
 
 int main() {
     //glfw inicjalizacja
@@ -92,13 +94,16 @@ int main() {
     unsigned int mainShader = shaders.shaderProgramID();
     unsigned int basicPostShader = shaders.framebufferShaderProgramID();
 
-    //multi step shaders
-    int numberOfMultistepShaders = 5;
+    //multi step shaders:
+    //canny
+    int numberOfMultistepShadersCanny = 5;
     unsigned int blurShader = shaders.blurShaderProgramID();
     unsigned int blackAndWhiteShader = shaders.blackAndWhiteShaderProgramID();
     unsigned int intensityGradientShader = shaders.intensityGradientShaderProgramID();
     unsigned int magnitudeThreasholdingShader = shaders.magnitudeThreasholdingShaderProgramID();
     unsigned int edgeTrackingByHysteresisShader = shaders.edgeTrackingByHysteresisShaderProgramID();
+    //kuwahara
+    unsigned int basicKuwaharaShader = shaders.basicKuwaharaFragmentShaderProgramID();
 
     //set constants
     framebuffer framebuffer(SCR_WIDTH, SCR_HEIGHT);
@@ -106,7 +111,10 @@ int main() {
     framebuffer.initialize();
 
     if (cannyEdgeDetection) {
-        framebuffer.setupPostProcessing(numberOfMultistepShaders);
+        framebuffer.setupPostProcessing(numberOfMultistepShadersCanny);
+    }
+    if (basicKuwahara) {
+        framebuffer.setupPostProcessing(1);
     }
     
     shaders.use(basicPostShader);
@@ -248,8 +256,15 @@ int main() {
             blurShader, blackAndWhiteShader, intensityGradientShader, magnitudeThreasholdingShader, edgeTrackingByHysteresisShader };
             
             framebuffer.postProcessingChain(postProcessShaders);
+            framebuffer.renderFinalOutput(basicPostShader, true);
+
+        }
+        else if (basicKuwahara) {
+            std::vector<unsigned int> postProcessShaders = { basicKuwaharaShader };
+            framebuffer.postProcessingChain(postProcessShaders);
 
             framebuffer.renderFinalOutput(basicPostShader, true);
+
         } else {
             //dont use the chain
             framebuffer.renderFinalOutput(basicPostShader, false);
@@ -271,6 +286,7 @@ int main() {
     glDeleteProgram(intensityGradientShader);
     glDeleteProgram(magnitudeThreasholdingShader);
     glDeleteProgram(edgeTrackingByHysteresisShader);
+    glDeleteProgram(basicKuwaharaShader);
 
     glfwTerminate();
 }

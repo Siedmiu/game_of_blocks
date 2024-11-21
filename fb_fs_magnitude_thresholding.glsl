@@ -18,8 +18,8 @@ const vec2 PIXEL_OFFSETS_3x3[9] = vec2[](
 const float TOLERANCE = 0.05f;
 
 const bool DOBUBLE_THREASHOLDING = true;
-const float LOW_THRESHOLD = 0.1f, HIGH_THRESHOLD = 0.2f;
-const float THRESHOLD_CONTRAST = 0.2f;
+const float LOW_THRESHOLD = 0.1f, HIGH_THRESHOLD = 0.25f;
+const float THRESHOLD_CONTRAST_HIGH = 0.3f, THRESHOLD_CONTRAST_LOW = 0.1f;
 
 void main() {
 //magnitude threasholding
@@ -39,10 +39,10 @@ void main() {
 //double threasholding
 if (DOBUBLE_THREASHOLDING) {
 	//if (pixel >= HIGH_THRESHOLD) pixel = HIGH_THRESHOLD
-	middlePixel = mix(middlePixel, HIGH_THRESHOLD + THRESHOLD_CONTRAST, step(HIGH_THRESHOLD, middlePixel));
+	middlePixel = mix(middlePixel, HIGH_THRESHOLD + THRESHOLD_CONTRAST_HIGH, step(HIGH_THRESHOLD, middlePixel));
 
 	//if (HIGH_THRESHOLD > pixel >= LOW_THRESHOLD) pixel = LOW_THRESHOLD
-	middlePixel = mix(middlePixel, LOW_THRESHOLD, step(LOW_THRESHOLD, middlePixel) * (1.0 - step(HIGH_THRESHOLD, middlePixel)));
+	middlePixel = mix(middlePixel, LOW_THRESHOLD + THRESHOLD_CONTRAST_LOW, step(LOW_THRESHOLD, middlePixel) * (1.0 - step(HIGH_THRESHOLD, middlePixel)));
 
 	//if (pixel <= LOW_THRESHOLD) pixel = 0
 	middlePixel = mix( 0.0f, middlePixel, step(LOW_THRESHOLD, middlePixel));

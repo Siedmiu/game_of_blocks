@@ -12,7 +12,8 @@ shaders::shaders() {
         "fb_fs_B_and_W.glsl",
         "fb_fs_intensity_gradient.glsl",
         "fb_fs_magnitude_thresholding.glsl",
-        "fb_fs_hysteresis.glsl"
+        "fb_fs_hysteresis.glsl",
+        "fb_fs_Basic_Kuwahara_Filter.glsl"
     };
 
     auto shaderCodes = loadShaderFiles(shaderFiles);
@@ -29,6 +30,7 @@ shaders::shaders() {
     const char* intensityGradientFragmentShaderCode = shaderCodes["fb_fs_intensity_gradient.glsl"].c_str();
     const char* magnitudeThreasholdingFragmentShaderCode = shaderCodes["fb_fs_magnitude_thresholding.glsl"].c_str();
     const char* edgeTrackingByHysteresisFragmentShaderCode = shaderCodes["fb_fs_hysteresis.glsl"].c_str();
+    const char* basicKuwaharaFragmentShaderCode = shaderCodes["fb_fs_Basic_Kuwahara_Filter.glsl"].c_str();
 
     //BASE SHADER
     //id shadera
@@ -150,6 +152,20 @@ shaders::shaders() {
 
     glDeleteShader(edgeTrackingByHysteresisFragmentShader);
 
+    //BASIC KUWAHARA
+    basicKuwaharaFragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(basicKuwaharaFragmentShader, 1, &basicKuwaharaFragmentShaderCode, NULL);
+    glCompileShader(basicKuwaharaFragmentShader);
+    checkCompileErrors(basicKuwaharaFragmentShader, "MT_FRAGMENT");
+
+    basicKuwaharaShaderProgram = glCreateProgram();
+    glAttachShader(basicKuwaharaShaderProgram, framebufferUniversalVertexShader);
+    glAttachShader(basicKuwaharaShaderProgram, basicKuwaharaFragmentShader);
+    glLinkProgram(basicKuwaharaShaderProgram);
+    checkCompileErrors(basicKuwaharaShaderProgram, "PROGRAM");
+
+    glDeleteShader(basicKuwaharaFragmentShader);
+
     //delete universal vertex shader
     glDeleteShader(framebufferUniversalVertexShader);
 }
@@ -205,6 +221,10 @@ unsigned int shaders::magnitudeThreasholdingShaderProgramID() const {
 
 unsigned int shaders::edgeTrackingByHysteresisShaderProgramID() const {
     return edgeTrackingByHysteresisShaderProgram;
+}
+
+unsigned int shaders::basicKuwaharaFragmentShaderProgramID() const {
+    return basicKuwaharaShaderProgram;
 }
 
 void shaders::use(unsigned int shaderProgramID) const {

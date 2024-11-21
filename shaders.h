@@ -15,11 +15,14 @@ private:
 	//shadery (kompilowane runtime)
 	unsigned int vertexShader, fragmentShader, geometryShader, shaderProgram;
 	unsigned int framebufferUniversalVertexShader, framebufferBasicFragmentShader, framebufferBasicShaderProgram;
+
 	unsigned int blurFragmentShader, blurShaderProgram;
 	unsigned int BAndWFragmentShader, BAndWShaderProgram;
 	unsigned int intensityGradientFragmentShader, intensityGradientShaderProgram;
 	unsigned int magnitudeThreasholdingFragmentShader, magnitudeThreasholdingShaderProgram;
 	unsigned int edgeTrackingByHysteresisFragmentShader, edgeTrackingByHysteresisShaderProgram;
+
+	unsigned int basicKuwaharaFragmentShader, basicKuwaharaShaderProgram;
 
 	void checkCompileErrors(GLuint shader, std::string type);
 	std::unordered_map<std::string, std::string> loadShaderFiles(const std::vector<std::string>& shaderFiles);
@@ -36,6 +39,7 @@ public:
 	unsigned int intensityGradientShaderProgramID() const;
 	unsigned int magnitudeThreasholdingShaderProgramID() const;
 	unsigned int edgeTrackingByHysteresisShaderProgramID() const;
+	unsigned int basicKuwaharaFragmentShaderProgramID() const;
 
 	void setMat4(const std::string& name, const glm::mat4& mat) const;
 	void setInt(unsigned int shaderProgramID, const std::string& name, int value) const;

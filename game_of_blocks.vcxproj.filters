@@ -98,5 +98,6 @@
     <None Include="fb_fs_intensity_gradient.glsl" />
     <None Include="fb_fs_magnitude_thresholding.glsl" />
     <None Include="fb_fs_hysteresis.glsl" />
+    <None Include="fb_fs_Basic_Kuwahara_Filter.glsl" />
   </ItemGroup>
 </Project>
