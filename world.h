@@ -23,6 +23,7 @@ private:
 	//WORLD SETTINGS
 	const unsigned short int RENDER_DISTANCE_CHUNKS = 15, BLOCK_SIZE = 1;
 	static const unsigned int CHUNK_VOLUME = CHUNK_HEIGHT * CHUNK_LENGTH * CHUNK_LENGTH;
+	static const unsigned short int REGION_SIZE = 256;
 
 	//GENERATION SETTINGS
 	static const unsigned int SEED = 1234;
@@ -32,6 +33,8 @@ private:
 	//BLOCKS
 	const uint8_t FACE_DIRECTION_BACK = 0, FACE_DIRECTION_FRONT = 1, FACE_DIRECTION_LEFT = 2, 
 				  FACE_DIRECTION_RIGHT = 3, FACE_DIRECTION_BOTTOM = 4, FACE_DIRECTION_TOP = 5;
+
+	const uint8_t GRASS_ID = 0, DIRT_ID = 1, STONE_ID = 2, AIR_ID = 32;
 
 	/*
 	const float blockVertices[120] = {
@@ -85,6 +88,7 @@ private:
 	player& playerOne;
 	camera& cam;
 
+	//world data
 	struct chunk {
 		int chunkX{}, chunkY{};
 		unsigned int VAO{}, SSBO{};
@@ -103,6 +107,11 @@ private:
 		}
 	};
 
+	struct region {
+		float regionData[REGION_SIZE * REGION_SIZE];
+	};
+
+	//colison
 	/*
 	struct overlapInfo {
 		bool isOverlapping;
@@ -125,6 +134,10 @@ private:
 		glm::vec3 overlapDistance{};
 	};
 
+	//region data can't be a unique pointer
+	std::unordered_map<std::pair<int, int>, std::unique_ptr<region>, pairHash> regions;
+	std::unordered_set<std::pair<int, int>, pairHash> existingRegions;
+
 	std::unordered_map<std::pair<int, int>, std::unique_ptr<chunk>, pairHash> chunks;
 	std::unordered_set<std::pair<int, int>, pairHash> existingChunks;
 
@@ -132,13 +145,19 @@ private:
 	//overlapInfoTruncation overlapAABBtruncation(const player::Aabb& playerAABB, const player::Aabb& blockAABB);
 	overlapInfo sweptAABBcolisonCheckInfo(int x, int y, int z) const;
 	void generateChunkMesh(chunk& c);
+
+	//perlin noise generationm
 	float cubicInterpolator(float a, float b, float weight);
 	float lerp(float a, float b, float weight);
 	float fade(float a);
 	float scalarProduct(float dx, float dy, std::pair<float, float> gradient);
 	std::pair<float, float> gradientRNG(int x, int y);
+
 	void perlinNoiseOctave(int chunkX, int chunkY, float* perlinNoise, float frequency, float amplitude);
 	void perlinNoiseGenerator(int chunkX, int chunkY, float* perlinNoise, unsigned int octaves, float persistence);
+
+	void newChunk(int x, int y);
+	void deleteChunk(int x, int y);
 
 	uint8_t getBlockWorldspace(int X, int Y, int Z);
 	uint8_t getBlock(int chunkX, int chunkY, uint8_t x, uint8_t y, uint8_t z);
@@ -162,8 +181,6 @@ public:
 	void sweptAABBcolisonCheck();
 	//void AABBcolisionDetection();
 	void createChunks();
-	void newChunk(int x, int y);
-	void deleteChunk(int x, int y);
 
 	const std::unordered_map<std::pair<int, int>, std::unique_ptr<Chunk>, pairHash>& getChunks() const {
 		return chunks;

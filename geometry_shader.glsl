@@ -8,6 +8,7 @@ flat in int v_TexID[];
 
 out vec2 TexCoord;
 flat out int FragTexID;
+flat out vec3 FragNormals;
 
 uniform mat4 model;
 uniform mat4 view;
@@ -52,6 +53,15 @@ const float blockVertices[120] = {
 	// ^ top ^
 };
 
+const vec3 FACE_NORMALS[6] = vec3[6](
+	vec3( 0.0f,  0.0f, -1.0f), //back
+	vec3( 0.0f,  0.0f,  1.0f), //front
+	vec3(-1.0f,  0.0f,  0.0f), //left
+	vec3( 1.0f,  0.0f,  0.0f), //right
+	vec3( 0.0f, -1.0f,  0.0f), //bottom
+	vec3( 0.0f,  1.0f,  0.0f)  //top
+);
+
 const bool CALCULATE_CURVATURE = true;
 const float WORLD_CURVATURE_RATE = 0.002f;
 
@@ -59,19 +69,12 @@ void createVertex(vec3 offset, vec2 texCoord);
 
 void main() {
     vec3 basePos = gl_in[0].gl_Position.xyz;
-    
-	createVertex(
-	vec3(blockVertices[0 + 20 * v_faceDirection[0]], blockVertices[1 + 20 * v_faceDirection[0]], blockVertices[2 + 20 * v_faceDirection[0]]),
-	vec2(blockVertices[3 + 20 * v_faceDirection[0]], blockVertices[4 + 20 * v_faceDirection[0]]));
-	createVertex(
-	vec3(blockVertices[0 + 5 + 20 * v_faceDirection[0]], blockVertices[1 + 5 + 20 * v_faceDirection[0]], blockVertices[2 + 5 + 20 * v_faceDirection[0]]),
-	vec2(blockVertices[3 + 5 + 20 * v_faceDirection[0]], blockVertices[4 + 5 + 20 * v_faceDirection[0]]));
-    createVertex(
-	vec3(blockVertices[0 + 10 + 20 * v_faceDirection[0]], blockVertices[1 + 10 + 20 * v_faceDirection[0]], blockVertices[2 + 10 + 20 * v_faceDirection[0]]),
-	vec2(blockVertices[3 + 10 + 20 * v_faceDirection[0]], blockVertices[4 + 10 + 20 * v_faceDirection[0]]));
-	createVertex(
-	vec3(blockVertices[0 + 15 + 20 * v_faceDirection[0]], blockVertices[1 + 15 + 20 * v_faceDirection[0]], blockVertices[2 + 15 + 20 * v_faceDirection[0]]),
-	vec2(blockVertices[3 + 15 + 20 * v_faceDirection[0]], blockVertices[4 + 15 + 20 * v_faceDirection[0]]));
+
+	for (int i = 0; i < 4; ++i) {
+		createVertex(
+		vec3(blockVertices[0 + 5 * i + 20 * v_faceDirection[0]], blockVertices[1 + 5 * i + 20 * v_faceDirection[0]], blockVertices[2 + 5 * i + 20 * v_faceDirection[0]]),
+		vec2(blockVertices[3 + 5 * i + 20 * v_faceDirection[0]], blockVertices[4 + 5 * i + 20 * v_faceDirection[0]]));
+	}
 
     EndPrimitive();
 }
@@ -92,5 +95,6 @@ void createVertex(vec3 offset, vec2 texCoord) {
 
     TexCoord = texCoord;
     FragTexID = v_TexID[0];
+	FragNormals = FACE_NORMALS[v_faceDirection[0]];
     EmitVertex();
 }

@@ -438,25 +438,25 @@ void world::generateChunkMesh(chunk& c) {
 				blockPosition = glm::vec3(cx, cz, cy);
 
 				//check neighbours
-				if (cx != 0) if (c.chunkBlockData[get3dCoord(cx - 1, cy, cz)] != 32) {
+				if (cx != 0) if (c.chunkBlockData[get3dCoord(cx - 1, cy, cz)] != AIR_ID) {
 					left = false;
 				};
-				if (cx != CHUNK_LENGTH - 1) if (c.chunkBlockData[get3dCoord(cx + 1, cy, cz)] != 32) {
+				if (cx != CHUNK_LENGTH - 1) if (c.chunkBlockData[get3dCoord(cx + 1, cy, cz)] != AIR_ID) {
 					right = false;
 				};
-				if (cy != 0) if (c.chunkBlockData[get3dCoord(cx, cy - 1, cz)] != 32) {
+				if (cy != 0) if (c.chunkBlockData[get3dCoord(cx, cy - 1, cz)] != AIR_ID) {
 					back = false;
 				};
-				if (cy != CHUNK_LENGTH - 1) if (c.chunkBlockData[get3dCoord(cx, cy + 1, cz)] != 32) {
+				if (cy != CHUNK_LENGTH - 1) if (c.chunkBlockData[get3dCoord(cx, cy + 1, cz)] != AIR_ID) {
 					front = false;
 				};
-				if (cz != 0) if (c.chunkBlockData[get3dCoord(cx, cy, cz - 1)] != 32) {
+				if (cz != 0) if (c.chunkBlockData[get3dCoord(cx, cy, cz - 1)] != AIR_ID) {
 					bottom = false;
 				};
 				if (cz == 0) {
 					bottom = false;
 				};
-				if (cz != CHUNK_HEIGHT - 1) if (c.chunkBlockData[get3dCoord(cx, cy, cz + 1)] != 32) {
+				if (cz != CHUNK_HEIGHT - 1) if (c.chunkBlockData[get3dCoord(cx, cy, cz + 1)] != AIR_ID) {
 					top = false;
 				};
 
@@ -490,19 +490,6 @@ void world::generateChunkMesh(chunk& c) {
 					container = blockPosition.z;
 					container = container << (sizeof(float) * 8 - 5 - 8 - 5); // 14 to 18
 					vertexData.uliData |= container;
-
-					//! not needed?
-					/*
-					//texture coordintae s
-					container = (1);
-					container = container << (sizeof(float) * 8 - 5 - 8 - 5 - 1); //19
-					vertexData.uliData |= container;
-
-					//texture coordintae t
-					container = (1);
-					container = container << (sizeof(float) * 8 - 5 - 8 - 5 - 1 - 1); //20
-					vertexData.uliData |= container;
-					*/
 
 					//texture ID
 					container = static_cast<unsigned long int>(blockID);
@@ -689,19 +676,20 @@ void world::newChunk(int x, int y) {
 
 	//set block data
 	float perlinNoise[CHUNK_LENGTH * CHUNK_LENGTH]{};
-	perlinNoiseGenerator(x, y, perlinNoise, OCTAVES, PERSISTANCE);
+	perlinNoiseGenerator(x, y, perlinNoise, OCTAVES, PERSISTANCE); // this will change
+
 	for (uint8_t cx = 0; cx < CHUNK_LENGTH; cx++) {
 		for (uint8_t cy = 0; cy < CHUNK_LENGTH; cy++) {
 			uint8_t height = (uint8_t)(((perlinNoise[get2dCoord(cx, cy)] + 1.5f) * 0.36f) * CHUNK_HEIGHT); //TO TRZEBA ZAKTUALIZOWAC DO GENERACJI Z OKTAWAMI
 			//uint8_t height = (cx % 4 || cy % 4) ? 2 : 90;
 			
 			for (uint8_t cz = 0; cz <= height - 2; ++cz) {
-				newChunk->chunkBlockData[get3dCoord(cx, cy, cz)] = 2; //Stone
+				newChunk->chunkBlockData[get3dCoord(cx, cy, cz)] = STONE_ID;
 			}
-			newChunk->chunkBlockData[get3dCoord(cx, cy, height - 1)] = 1; // Dirt
-			newChunk->chunkBlockData[get3dCoord(cx, cy, height)] = 0; // Grass
+			newChunk->chunkBlockData[get3dCoord(cx, cy, height - 1)] = DIRT_ID;
+			newChunk->chunkBlockData[get3dCoord(cx, cy, height)] = GRASS_ID;
 			for (uint8_t cz = height + 1; cz < CHUNK_HEIGHT; ++cz) {
-				newChunk->chunkBlockData[get3dCoord(cx, cy, cz)] = 32; //Air
+				newChunk->chunkBlockData[get3dCoord(cx, cy, cz)] = AIR_ID;
 			}
 		}
 	}
