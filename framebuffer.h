@@ -8,6 +8,7 @@ private:
     struct framebufferObject {
         GLuint fbo = 0;
         GLuint texture = 0;
+        GLuint depthTexture = 0;
         GLuint rbo = 0;
     };
 
@@ -34,7 +35,7 @@ private:
 
     void setupCanvas();
     //to powinno byc prywante!
-    void createFramebufferObject(framebufferObject& fbo);
+    void createFramebufferObject(framebufferObject& fbo) const;
     void deleteFramebufferObject(framebufferObject& fbo);
 
 public:

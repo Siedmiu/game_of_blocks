@@ -14,7 +14,8 @@ shaders::shaders() {
         "fb_fs_magnitude_thresholding.glsl",
         "fb_fs_hysteresis.glsl",
         "fb_fs_Basic_Kuwahara_Filter.glsl",
-        "fb_fs_canny_overlay.glsl"
+        "fb_fs_canny_overlay.glsl",
+        "fb_fs_split_screen.glsl"
     };
 
     auto shaderCodes = loadShaderFiles(shaderFiles);
@@ -33,8 +34,7 @@ shaders::shaders() {
     const char* edgeTrackingByHysteresisFragmentShaderCode = shaderCodes["fb_fs_hysteresis.glsl"].c_str();
     const char* basicKuwaharaFragmentShaderCode = shaderCodes["fb_fs_Basic_Kuwahara_Filter.glsl"].c_str();
     const char* cannyOverlayFragmentShaderCode = shaderCodes["fb_fs_canny_overlay.glsl"].c_str();
-
-    //to trzeba w funkcje zamienic
+    const char* splitScreenFragmentShaderCode = shaderCodes["fb_fs_split_screen.glsl"].c_str();
 
     //BASE SHADER
     //id shadera
@@ -184,10 +184,25 @@ shaders::shaders() {
 
     glDeleteShader(cannyOverlayFragmentShader);
 
+    //SPLIT SCREEN
+    splitScreenFragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(splitScreenFragmentShader, 1, &splitScreenFragmentShaderCode, NULL);
+    glCompileShader(splitScreenFragmentShader);
+    checkCompileErrors(splitScreenFragmentShader, "CANNY_OVERLAY_FRAGMENT");
+
+    splitScreenShaderProgram = glCreateProgram();
+    glAttachShader(splitScreenShaderProgram, framebufferUniversalVertexShader);
+    glAttachShader(splitScreenShaderProgram, splitScreenFragmentShader);
+    glLinkProgram(splitScreenShaderProgram);
+    checkCompileErrors(splitScreenShaderProgram, "PROGRAM");
+
+    glDeleteShader(splitScreenFragmentShader);
+
     //delete universal vertex shader
     glDeleteShader(framebufferUniversalVertexShader);
 }
 
+//ladowanie shaderow z listy
 std::unordered_map<std::string, std::string> shaders::loadShaderFiles(const std::vector<std::string>& shaderFiles) {
     std::unordered_map<std::string, std::string> shaderCodes;
 
@@ -249,6 +264,10 @@ unsigned int shaders::cannyOverlayShaderProgramID() const {
     return cannyOverlayShaderProgram;
 }
 
+unsigned int shaders::splitScreenShaderProgramID() const {
+    return splitScreenShaderProgram;
+}
+
 void shaders::use(unsigned int shaderProgramID) const {
     glUseProgram(shaderProgramID);
 }
@@ -268,7 +287,7 @@ void shaders::checkCompileErrors(GLuint shader, std::string type) {
         if (!success)
         {
             glGetShaderInfoLog(shader, 1024, NULL, infoLog);
-            std::cout << "ERROR::SHADER_COMPILATION_ERROR of type: " << type << "\n" << infoLog << "\n -- --------------------------------------------------- -- " << std::endl;
+            std::cout << "ERROR::SHADER_COMPILATION_ERROR of type: " << type << "\n" << infoLog << "\n -- ---------------------------------:(----------------- -- " << std::endl;
         }
     }
     else
@@ -277,7 +296,7 @@ void shaders::checkCompileErrors(GLuint shader, std::string type) {
         if (!success)
         {
             glGetProgramInfoLog(shader, 1024, NULL, infoLog);
-            std::cout << "ERROR::PROGRAM_LINKING_ERROR of type: " << type << "\n" << infoLog << "\n -- --------------------------------------------------- -- " << std::endl;
+            std::cout << "ERROR::PROGRAM_LINKING_ERROR of type: " << type << "\n" << infoLog << "\n -- --------------------------------------:(------------ -- " << std::endl;
         }
     }
 }

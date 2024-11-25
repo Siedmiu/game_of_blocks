@@ -31,7 +31,7 @@ void framebuffer::setupCanvas() {
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
 }
 
-void framebuffer::createFramebufferObject(framebufferObject& fbo) {
+void framebuffer::createFramebufferObject(framebufferObject& fbo) const {
     glGenFramebuffers(1, &fbo.fbo);
     glGenTextures(1, &fbo.texture);
     glGenRenderbuffers(1, &fbo.rbo);
@@ -45,6 +45,18 @@ void framebuffer::createFramebufferObject(framebufferObject& fbo) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fbo.texture, 0);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    /*
+    glGenTextures(1, &fbo.depthTexture);
+    glBindTexture(GL_TEXTURE_2D, fbo.depthTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, SCR_WIDTH, SCR_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, fbo.depthTexture, 0);
+    glBindTexture(GL_TEXTURE_2D, 0);*/
 
     glBindRenderbuffer(GL_RENDERBUFFER, fbo.rbo);
     glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, SCR_WIDTH, SCR_HEIGHT);
@@ -181,6 +193,12 @@ void framebuffer::cannyOverlay(const std::vector<GLuint>& cannyShaders, const st
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, edgeTexture);
     glUniform1i(glGetUniformLocation(overlayShader, "cannyTexture"), 1);
+
+    /*
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D, mainBuffer.depthTexture);
+    glUniform1i(glGetUniformLocation(overlayShader, "depthTexture"), 2);
+    */
 
     glDrawArrays(GL_TRIANGLES, 0, 6);
 }

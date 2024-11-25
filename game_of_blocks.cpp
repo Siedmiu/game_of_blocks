@@ -47,6 +47,7 @@ const float TIMESTEP = 1.0f / 60.0f;
 bool cannyEdgeDetection = false;
 bool basicKuwahara = false;
 bool cannyAndKuwahara = false;
+bool splitScreen = true;
 
 int main() {
     //glfw inicjalizacja
@@ -107,6 +108,8 @@ int main() {
     unsigned int cannyOverlayShader = shaders.cannyOverlayShaderProgramID();
     //kuwahara
     unsigned int basicKuwaharaShader = shaders.basicKuwaharaShaderProgramID();
+    //split screen
+    unsigned int splitScreenShader = shaders.splitScreenShaderProgramID();
 
     //set constants
     framebuffer framebuffer(SCR_WIDTH, SCR_HEIGHT);
@@ -117,6 +120,10 @@ int main() {
         if (cannyAndKuwahara) numberOfMultistepShadersCanny += 2;
         framebuffer.setupPostProcessing(numberOfMultistepShadersCanny);
     }
+    if (splitScreen) {
+        numberOfMultistepShadersCanny += 2;
+        framebuffer.setupPostProcessing(numberOfMultistepShadersCanny);
+    }
     if (basicKuwahara && !cannyAndKuwahara) {
         framebuffer.setupPostProcessing(1);
     }
@@ -124,7 +131,7 @@ int main() {
     shaders.use(basicPostShader);
     shaders.setInt(basicPostShader, "screenTexture", 0);
 
-    //game textures shift by one for the base framebuffer texture
+    //game textures shift by one for the base framebuffer texture, second fb and depth buffer
     int mainbufferOffset = 2;
     TextureLoader textureLoader(mainbufferOffset);
     std::vector<std::string> textureFiles = {
@@ -146,7 +153,7 @@ int main() {
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &SSBO);
 
-    //Edging mode
+    //Edging mode (framebuffer zaslania)
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     //-----------------TRANSFORMATION MATRICES----------------------------//
@@ -216,7 +223,7 @@ int main() {
         framebuffer.bindMainFramebuffer();
 
         //clear zbuffer
-        glClearColor(0.2f, 0.4f, 0.6f, 1.0f);
+        glClearColor(0.2f, 0.62f, 0.9f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glEnable(GL_DEPTH_TEST);
 
@@ -266,7 +273,18 @@ int main() {
             framebuffer.cannyOverlay(postProcessShadersCanny, kuwaharaShader, cannyOverlayShader);
             framebuffer.renderFinalOutput(basicPostShader, true);
 
-        } else if (cannyEdgeDetection) {
+        } else if (splitScreen) {
+            std::vector<unsigned int> postProcessShadersCanny = {
+            blurShader, blackAndWhiteShader, intensityGradientShader, magnitudeThreasholdingShader, edgeTrackingByHysteresisShader };
+
+            std::vector<unsigned int> basicShader = { basicPostShader };
+
+            //canny, basic and split screen
+            framebuffer.cannyOverlay(postProcessShadersCanny, basicShader, splitScreenShader);
+            framebuffer.renderFinalOutput(basicPostShader, true);
+
+        }
+        else if (cannyEdgeDetection) {
             std::vector<unsigned int> postProcessShadersCanny = {
             blurShader, blackAndWhiteShader, intensityGradientShader, magnitudeThreasholdingShader, edgeTrackingByHysteresisShader };
             
@@ -303,6 +321,7 @@ int main() {
     glDeleteProgram(edgeTrackingByHysteresisShader);
     glDeleteProgram(basicKuwaharaShader);
     glDeleteProgram(cannyOverlayShader);
+    glDeleteProgram(splitScreenShader);
 
     glfwTerminate();
 }
