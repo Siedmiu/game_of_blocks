@@ -62,7 +62,7 @@ const vec3 FACE_NORMALS[6] = vec3[6](
 	vec3( 0.0f,  1.0f,  0.0f)  //top
 );
 
-const bool CALCULATE_CURVATURE = true;
+const bool CALCULATE_CURVATURE = false;
 const float WORLD_CURVATURE_RATE = 0.002f;
 
 void createVertex(vec3 offset, vec2 texCoord);

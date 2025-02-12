@@ -23,9 +23,7 @@ private:
 	unsigned int edgeTrackingByHysteresisFragmentShader, edgeTrackingByHysteresisShaderProgram;
 
 	unsigned int basicKuwaharaFragmentShader, basicKuwaharaShaderProgram;
-
 	unsigned int cannyOverlayFragmentShader, cannyOverlayShaderProgram;
-
 	unsigned int splitScreenFragmentShader, splitScreenShaderProgram;
 
 	void checkCompileErrors(GLuint shader, std::string type);

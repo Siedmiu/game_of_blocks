@@ -15,7 +15,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-const unsigned short int CHUNK_HEIGHT = 100, CHUNK_LENGTH = 16; //na razie nie zmienac
+const unsigned short int CHUNK_HEIGHT = 100, CHUNK_LENGTH = 16;
 const float CHUNK_LENGTH_RECIPROCAL = 1.0f / CHUNK_LENGTH;
 
 class world {
@@ -27,8 +27,14 @@ private:
 
 	//GENERATION SETTINGS
 	static const unsigned int SEED = 1234;
-	const unsigned int OCTAVES = 1;
-	const float PERSISTANCE = 0.5f;
+	const unsigned int OCTAVES = 4;
+	const float PERSISTANCE = 0.75f;
+	const unsigned short int MIN_HEIGHT = 20;
+
+	const float ROTATION_MATRIX[2][2] = {
+	{4.0f / 5.0f, -3.0f / 5.0f},
+	{3.0f / 5.0f, 4.0f / 5.0f}
+	};
 
 	//BLOCKS
 	const uint8_t FACE_DIRECTION_BACK = 0, FACE_DIRECTION_FRONT = 1, FACE_DIRECTION_LEFT = 2, 
@@ -150,11 +156,15 @@ private:
 	float cubicInterpolator(float a, float b, float weight);
 	float lerp(float a, float b, float weight);
 	float fade(float a);
-	float scalarProduct(float dx, float dy, std::pair<float, float> gradient);
-	std::pair<float, float> gradientRNG(int x, int y);
+	inline float fadeCheap(float a);
+	float scalarProductNormalized(float dx, float dy, std::pair<float, float> gradient);
+	std::pair<float, float> gradientRNGvec2(int x, int y);
+	float gradientRNG(float i_x, float i_y);
 
+	inline float polynomialNoiseSample(float dx, float dy, float a, float b, float c, float d);
 	void perlinNoiseOctave(int chunkX, int chunkY, float* perlinNoise, float frequency, float amplitude);
-	void perlinNoiseGenerator(int chunkX, int chunkY, float* perlinNoise, unsigned int octaves, float persistence);
+	void polynomialNoiseOctave(float x0, float y0, float x1, float y1, float* noiseMap, float frequency, float amplitude);
+	void noiseGenerator(int chunkX, int chunkY, float* noiseMap);
 
 	void newChunk(int x, int y);
 	void deleteChunk(int x, int y);

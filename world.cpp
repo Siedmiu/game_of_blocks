@@ -675,12 +675,13 @@ void world::newChunk(int x, int y) {
 	newChunk->SSBO = 0;
 
 	//set block data
-	float perlinNoise[CHUNK_LENGTH * CHUNK_LENGTH]{};
-	perlinNoiseGenerator(x, y, perlinNoise, OCTAVES, PERSISTANCE); // this will change
+	float noiseMap[CHUNK_LENGTH * CHUNK_LENGTH]{};
+	noiseGenerator(x, y, noiseMap);
 
 	for (uint8_t cx = 0; cx < CHUNK_LENGTH; cx++) {
 		for (uint8_t cy = 0; cy < CHUNK_LENGTH; cy++) {
-			uint8_t height = (uint8_t)(((perlinNoise[get2dCoord(cx, cy)] + 1.5f) * 0.36f) * CHUNK_HEIGHT); //TO TRZEBA ZAKTUALIZOWAC DO GENERACJI Z OKTAWAMI
+			float normalizedNoise = noiseMap[get2dCoord(cx, cy)] * (1 - PERSISTANCE) / (1 - pow(PERSISTANCE, OCTAVES));
+			uint8_t height = (uint8_t)(MIN_HEIGHT + normalizedNoise * (CHUNK_HEIGHT - MIN_HEIGHT));
 			//uint8_t height = (cx % 4 || cy % 4) ? 2 : 90;
 			
 			for (uint8_t cz = 0; cz <= height - 2; ++cz) {
@@ -747,15 +748,27 @@ float world::cubicInterpolator(float a, float b, float weight) {
 }
 
 float world::lerp(float a, float b, float weight) {
+	//linear interpolation function
 	return a + weight * (b - a);
 }
 
 float world::fade(float a) { //ttv/faide
+	//input 0 to 1, output 0 to 1
+	//smooths out the kinks of the gradients
+	//smooth stepping function: 6x^5 -15x^4 + 10x^3
 	return a * a * a * (a * (a * 6 - 15) + 10);
-	//dla a (0,1) wartosci (0, 10)
 }
 
-std::pair<float, float> world::gradientRNG(int i_x, int i_y) { //-1 do 1
+inline float world::fadeCheap(float a) {
+	//input 0 to 1, output 0 to 1
+	//smooths out the kinks of the gradients
+	//smooth stepping function: 3x^2 - 2x^3
+	return a * a * (3 - 2 * a);
+}
+
+std::pair<float, float> world::gradientRNGvec2(int i_x, int i_y) {
+	//based on the coordinates and the seed value calculates
+	//the gradient unit vectors on the grid edges
 	const unsigned int widthInt = 8 * sizeof(int);
 	const unsigned int halfwidthInt = int(widthInt * 0.5);
 	unsigned int a = SEED ^ i_x, b = SEED ^ i_y;
@@ -770,6 +783,7 @@ std::pair<float, float> world::gradientRNG(int i_x, int i_y) { //-1 do 1
 	//~0u = 0xFFFFFFFF
 	float random = (float)(a * (3.14159265 / ~(~0u >> 1))); //[0, 2*Pi]
 
+	// -1 to 1, unit vector length = sqrt(2)
 	std::pair<float, float> p;
 	p.first = sin(random);
 	p.second = cos(random);
@@ -777,72 +791,143 @@ std::pair<float, float> world::gradientRNG(int i_x, int i_y) { //-1 do 1
 	return p;
 };
 
-float world::scalarProduct(float dx, float dy, std::pair<float, float> gradient) {
-	return (dx * gradient.first + dy * gradient.second);
-	// -2 do 2
+float world::gradientRNG(float i_x, float i_y) {
+	//random value at point (0 to 1) based on float values
+	unsigned int ix, iy;
+	std::memcpy(&ix, &i_x, sizeof(float));
+	std::memcpy(&iy, &i_y, sizeof(float));
+
+	const unsigned int widthInt = 8 * sizeof(int);
+	const unsigned int halfwidthInt = int(widthInt * 0.5);
+	unsigned int a = SEED ^ ix, b = SEED ^ iy;
+
+	//szahermaher z bitami na podstawie seed
+	a *= 3284157443;
+	b ^= (a << halfwidthInt) | (a >> (widthInt - halfwidthInt));
+	b *= 1911520717;
+	a ^= (b << halfwidthInt) | (b >> (widthInt - halfwidthInt));
+	a *= 2048419325;
+
+	//~0u = 0xFFFFFFFF
+	float random = (float)(a * (0.5f / ~(~0u >> 1)));
+
+	return random;
+};
+
+float world::scalarProductNormalized(float dx, float dy, std::pair<float, float> gradient) {
+	//gradient is a unit vector
+	// (dx,dx) is a position vector, dx,dy = [0,1]
+	//dot product range is [-2,2]
+	//result is normalized to [0, 1] range
+	return ((dx * gradient.first + dy * gradient.second) + 2) * 0.25;
 }
 
 void world::perlinNoiseOctave(int chunkX, int chunkY, float* perlinNoise, float frequency, float amplitude) {
-	//wspolrzedne krawedzi siatki
-	int x0 = chunkX * CHUNK_LENGTH;
-	int y0 = chunkY * CHUNK_LENGTH;
-	int x1 = x0 + CHUNK_LENGTH;
-	int y1 = y0 + CHUNK_LENGTH;
+	//grid corner coordinates (spiral)
+	int x0 = chunkX;
+	int y0 = chunkY;
+	int x1 = x0 + 1;
+	int y1 = y0 + 1;
 
-	//krawedzie siatki
-	float k00, k10, k11, k01;
-	float dwn, up;
+	//punkty mapy
+	float map_up_left, map_up_right, map_down_right, map_down_left;
+	float bottom_pair, top_pair;
 
 	//gradient na krawedziach
-	std::pair<float, float> gradient00 = gradientRNG(x0, y0);
-	std::pair<float, float> gradient10 = gradientRNG(x1, y0);
-	std::pair<float, float> gradient11 = gradientRNG(x1, y1);
-	std::pair<float, float> gradient01 = gradientRNG(x0, y1);
+	std::pair<float, float> gradient_up_left = gradientRNGvec2(x0, y1);
+	std::pair<float, float> gradient_up_right = gradientRNGvec2(x1, y1);
+	std::pair<float, float> gradient_down_right = gradientRNGvec2(x1, y0);
+	std::pair<float, float> gradient_down_left = gradientRNGvec2(x0, y0);
 
 	//wagi interpolacji
 	float wx, wy;
 
 	for (uint8_t x = 0; x < CHUNK_LENGTH; x++) {
-		wx = fade(x * CHUNK_LENGTH_RECIPROCAL);
+		wx = x * CHUNK_LENGTH_RECIPROCAL;
+
 		for (uint8_t y = 0; y < CHUNK_LENGTH; y++) {
-			wy = fade(y * CHUNK_LENGTH_RECIPROCAL);
+			wy = y * CHUNK_LENGTH_RECIPROCAL;
 
 			//obliczenia krawedzi
-			k00 = scalarProduct(x * CHUNK_LENGTH_RECIPROCAL, y * CHUNK_LENGTH_RECIPROCAL, gradient00);
-			k10 = scalarProduct((x - CHUNK_LENGTH) * CHUNK_LENGTH_RECIPROCAL, y * CHUNK_LENGTH_RECIPROCAL, gradient10);
-			k11 = scalarProduct((x - CHUNK_LENGTH) * CHUNK_LENGTH_RECIPROCAL, (y - CHUNK_LENGTH) * CHUNK_LENGTH_RECIPROCAL, gradient11);
-			k01 = scalarProduct(x * CHUNK_LENGTH_RECIPROCAL, (y - CHUNK_LENGTH) * CHUNK_LENGTH_RECIPROCAL , gradient01);
+			map_up_left = scalarProductNormalized(wx, wy, gradient_up_left);
+			map_up_right = scalarProductNormalized(wx, wy, gradient_up_right);
+			map_down_right = scalarProductNormalized(wx, wy, gradient_down_right);
+			map_down_left = scalarProductNormalized(wx, wy, gradient_down_left);
 
-			//interpolacja up dwn
-			dwn = lerp(k00, k10, wx);
-			up = lerp(k01, k11, wx);
-			perlinNoise[get2dCoord(x, y)] += lerp(dwn, up, wy) * amplitude;
+			map_up_left = fade(map_up_left);
+			map_up_right = fade(map_up_right);
+			map_down_right = fade(map_down_right);
+			map_down_left = fade(map_down_left);
 
-			/*
-			//obliczenie i interpolacja dwn
-			k00 = scalarProduct(1 - wx, 1 - wy, gradient00);
-			k10 = scalarProduct(wx - 1, 1 - wy, gradient10);
-			dwn = cubicInterpolator(k00, k10, wx);
+			//interpolate horizontally
+			top_pair = lerp(map_up_left, map_up_right, wx);
+			bottom_pair = lerp(map_down_left, map_down_right, wx);
 
-			//obliczenie i interpolacja up
-			k11 = scalarProduct(wx - 1, wy - 1, gradient11);
-			k01 = scalarProduct(1 - wx, wy - 1, gradient01);
-			up = cubicInterpolator(k11, k01, wx);
-
-			// interpolacja
-			perlinNoise[get2dCoord(x, y)] = cubicInterpolator(dwn, up, wy);
-			*/
+			//interpolate vertically
+			perlinNoise[get2dCoord(x, y)] += lerp(bottom_pair, top_pair, wy) * amplitude;
 		}
 	}
 }
 
-void world::perlinNoiseGenerator(int chunkX, int chunkY, float* perlinNoise, unsigned int octaves, float persistence) {
-	float amplitude = 1;
-	float frequency = 1;
+void world::polynomialNoiseOctave(float x0, float y0, float x1, float y1, float* noiseMap, float frequency, float amplitude) {
+	//chunk edge values
+	float a = gradientRNG(x0, y0);
+	float b = gradientRNG(x1, y0);
+	float c = gradientRNG(x0, y1);
+	float d = gradientRNG(x1, y1);
 
-	for (unsigned int octave = 0; octave < octaves; octave++) {
-		perlinNoiseOctave(chunkX, chunkY, perlinNoise, frequency, amplitude);
-		amplitude *= persistence;
+	//interpolation weights
+	float wx, wy;
+
+	for (uint8_t x = 0; x < CHUNK_LENGTH; x++) {
+		wx = x * CHUNK_LENGTH_RECIPROCAL;
+
+		for (uint8_t y = 0; y < CHUNK_LENGTH; y++) {
+			wy = y * CHUNK_LENGTH_RECIPROCAL;
+
+			noiseMap[get2dCoord(x, y)] += polynomialNoiseSample(wx, wy, a, b, c, d) * amplitude;
+		}
+	}
+}
+
+inline float world::polynomialNoiseSample(float dx, float dy, float a, float b, float c, float d) {
+	//should remain between 0 and 1
+	return (
+		a +
+		(b - a) * fadeCheap(dx) +
+		(c - a) * fadeCheap(dy) +
+		(a - b - c + d) * fadeCheap(dx) * fadeCheap(dy)
+		);
+}
+
+void world::noiseGenerator(int chunkX, int chunkY, float* noiseMap) {
+	float amplitude = 1, frequency = 1;
+
+	//grid corner coordinates (spiral)
+	float x0 = chunkX;
+	float y0 = chunkY;
+	float x1 = (x0 + 1);
+	float y1 = (y0 + 1);
+
+	for (unsigned int octave = 0; octave < OCTAVES; octave++) {
+		polynomialNoiseOctave(x0, y0, x1, y1, noiseMap, frequency, amplitude);
+
+		x0 = chunkX * frequency;
+		y0 = chunkY * frequency;
+		x1 = (x0 + frequency);
+		y1 = (y0 + frequency);
+
+		//rotate by rotation matrix "octave" amount of times
+		/*
+		for (int i = 0; i < octave; i++) {
+			float tempX0 = x0, tempX1 = x1;
+			x0 = ROTATION_MATRIX[0][0] * tempX0 + ROTATION_MATRIX[0][1] * y0;
+			y0 = ROTATION_MATRIX[1][0] * tempX0 + ROTATION_MATRIX[1][1] * y0;
+			x1 = ROTATION_MATRIX[0][0] * tempX1 + ROTATION_MATRIX[0][1] * y1;
+			y1 = ROTATION_MATRIX[1][0] * tempX1 + ROTATION_MATRIX[1][1] * y1;
+		}*/
+
+		amplitude *= PERSISTANCE;
 		frequency *= 2;
 	}
 }

@@ -47,7 +47,7 @@ const float TIMESTEP = 1.0f / 60.0f;
 bool cannyEdgeDetection = false;
 bool basicKuwahara = false;
 bool cannyAndKuwahara = false;
-bool splitScreen = true;
+bool splitScreen = false;
 
 int main() {
     //glfw inicjalizacja
