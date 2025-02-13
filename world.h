@@ -27,8 +27,8 @@ private:
 
 	//GENERATION SETTINGS
 	static const unsigned int SEED = 1234;
-	const unsigned int OCTAVES = 4;
-	const float PERSISTANCE = 0.75f;
+	const unsigned int OCTAVES = 3;
+	const float PERSISTANCE = 0.5f;
 	const unsigned short int MIN_HEIGHT = 20;
 
 	const float ROTATION_MATRIX[2][2] = {
@@ -163,7 +163,7 @@ private:
 
 	inline float polynomialNoiseSample(float dx, float dy, float a, float b, float c, float d);
 	void perlinNoiseOctave(int chunkX, int chunkY, float* perlinNoise, float frequency, float amplitude);
-	void polynomialNoiseOctave(float x0, float y0, float x1, float y1, float* noiseMap, float frequency, float amplitude);
+	void polynomialNoiseGridCell(float* gridCellnoiseMap, float x0, float y0, int gridCellLength);
 	void noiseGenerator(int chunkX, int chunkY, float* noiseMap);
 
 	void newChunk(int x, int y);

@@ -324,8 +324,6 @@ void world::sweptAABBcolisonCheck() {
 }
 
 void world::createChunks() {
-	auto t1 = std::chrono::high_resolution_clock::now();
-
 	if (playerChunkX == lastPlayerChunkX && playerChunkY == lastPlayerChunkY) return;
 	lastPlayerChunkX = playerChunkX;
 	lastPlayerChunkY = playerChunkY;
@@ -417,10 +415,6 @@ void world::createChunks() {
 			existingChunks.emplace(chunk);
 		}
 	}
-
-	auto t2 = std::chrono::high_resolution_clock::now();
-	auto duration = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
-	std::cout << duration << std::endl;
 }
 
 //nie da sie sprawdzic chunkow obok jak jeszcze nie istnieja, poprawic dla nowego generatora szumu
@@ -680,8 +674,13 @@ void world::newChunk(int x, int y) {
 
 	for (uint8_t cx = 0; cx < CHUNK_LENGTH; cx++) {
 		for (uint8_t cy = 0; cy < CHUNK_LENGTH; cy++) {
-			float normalizedNoise = noiseMap[get2dCoord(cx, cy)] * (1 - PERSISTANCE) / (1 - pow(PERSISTANCE, OCTAVES));
-			uint8_t height = (uint8_t)(MIN_HEIGHT + normalizedNoise * (CHUNK_HEIGHT - MIN_HEIGHT));
+
+			uint8_t height = (uint8_t)(MIN_HEIGHT + noiseMap[get2dCoord(cx, cy)] * (CHUNK_HEIGHT - MIN_HEIGHT));
+			if (height >= CHUNK_HEIGHT) {
+				height = CHUNK_HEIGHT - 1;
+			}
+			else if (height < MIN_HEIGHT) height = MIN_HEIGHT;
+
 			//uint8_t height = (cx % 4 || cy % 4) ? 2 : 90;
 			
 			for (uint8_t cz = 0; cz <= height - 2; ++cz) {
@@ -869,23 +868,31 @@ void world::perlinNoiseOctave(int chunkX, int chunkY, float* perlinNoise, float 
 	}
 }
 
-void world::polynomialNoiseOctave(float x0, float y0, float x1, float y1, float* noiseMap, float frequency, float amplitude) {
-	//chunk edge values
-	float a = gradientRNG(x0, y0);
-	float b = gradientRNG(x1, y0);
-	float c = gradientRNG(x0, y1);
-	float d = gradientRNG(x1, y1);
+void world::polynomialNoiseGridCell(float* gridCellnoiseMap, float gridX0, float gridY0, int gridCellLength) {
+	float gridX1 = gridX0 + gridCellLength;
+	float gridY1 = gridY0 + gridCellLength;
+
+	//grid cell edge values
+	float a = gradientRNG(gridX0, gridY0);
+	float b = gradientRNG(gridX1, gridY0);
+	float c = gradientRNG(gridX0, gridY1);
+	float d = gradientRNG(gridX1, gridY1);
+
+	float gridCellSizeReciprocal = 1.0f / gridCellLength;
+
+	int startX = abs((int)(gridX0) % CHUNK_LENGTH);
+	int startY = abs((int)(gridY0) % CHUNK_LENGTH);
 
 	//interpolation weights
 	float wx, wy;
 
-	for (uint8_t x = 0; x < CHUNK_LENGTH; x++) {
-		wx = x * CHUNK_LENGTH_RECIPROCAL;
+	for (uint8_t x = 0; x < gridCellLength; x++) {
+		wx = x * gridCellSizeReciprocal;
 
-		for (uint8_t y = 0; y < CHUNK_LENGTH; y++) {
-			wy = y * CHUNK_LENGTH_RECIPROCAL;
+		for (uint8_t y = 0; y < gridCellLength; y++) {
+			wy = y * gridCellSizeReciprocal;
 
-			noiseMap[get2dCoord(x, y)] += polynomialNoiseSample(wx, wy, a, b, c, d) * amplitude;
+			gridCellnoiseMap[get2dCoord(startX + x, startY + y)] = polynomialNoiseSample(wx, wy, a, b, c, d);
 		}
 	}
 }
@@ -901,33 +908,66 @@ inline float world::polynomialNoiseSample(float dx, float dy, float a, float b, 
 }
 
 void world::noiseGenerator(int chunkX, int chunkY, float* noiseMap) {
-	float amplitude = 1, frequency = 1;
+	float amplitude = 1.0f;
+	float totalAmplitude = 0.0f;
+	int gridCellLength = CHUNK_LENGTH;  //will be chunk region later
+	int numCellsPerRow = 1;
 
-	//grid corner coordinates (spiral)
-	float x0 = chunkX;
-	float y0 = chunkY;
-	float x1 = (x0 + 1);
-	float y1 = (y0 + 1);
+	float* tempNoiseMap = new float[CHUNK_LENGTH * CHUNK_LENGTH];
+	float gridX0 = chunkX;
+	float gridY0 = chunkY;
 
 	for (unsigned int octave = 0; octave < OCTAVES; octave++) {
-		polynomialNoiseOctave(x0, y0, x1, y1, noiseMap, frequency, amplitude);
+		std::fill(tempNoiseMap, tempNoiseMap + (CHUNK_LENGTH * CHUNK_LENGTH), 0.0f);
 
-		x0 = chunkX * frequency;
-		y0 = chunkY * frequency;
-		x1 = (x0 + frequency);
-		y1 = (y0 + frequency);
+		for (int gx = 0; gx < numCellsPerRow; gx++) {
+			for (int gy = 0; gy < numCellsPerRow; gy++) {
+				gridX0 = chunkX * CHUNK_LENGTH + gx * gridCellLength;
+				gridY0 = chunkY * CHUNK_LENGTH + gy * gridCellLength;
 
-		//rotate by rotation matrix "octave" amount of times
+				//Generate noise
+				polynomialNoiseGridCell(tempNoiseMap, gridX0, gridY0, gridCellLength);
+			}
+		}
+
+		//add octave's noise contribution
+		for (uint8_t x = 0; x < CHUNK_LENGTH; x++) {
+			for (uint8_t y = 0; y < CHUNK_LENGTH; y++) {
+				noiseMap[get2dCoord(x, y)] += tempNoiseMap[get2dCoord(x, y)] * amplitude;
+			}
+		}
+
+		totalAmplitude += amplitude;
+		numCellsPerRow <<= 1;  //Next octave has 4x the cells (2x the frequency)
+		gridCellLength >>= 1;  //Each grid cell is half the size
+		//min size of a grid cell
+		if (gridCellLength < 4) break;
+
+		amplitude *= PERSISTANCE;
+	}
+
+	// Normalize the final noise map
+	for (uint8_t x = 0; x < CHUNK_LENGTH; x++) {
+		for (uint8_t y = 0; y < CHUNK_LENGTH; y++) {
+			noiseMap[get2dCoord(x, y)] /= totalAmplitude;
+		}
+	}
+	delete[] tempNoiseMap;
+}
+
+/*
+	auto t1 = std::chrono::high_resolution_clock::now();
+	auto t2 = std::chrono::high_resolution_clock::now();
+	auto duration = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
+	std::cout << duration << std::endl;
+*/
+
+//rotate by rotation matrix "octave" amount of times to prevent domain overlap
 		/*
 		for (int i = 0; i < octave; i++) {
 			float tempX0 = x0, tempX1 = x1;
-			x0 = ROTATION_MATRIX[0][0] * tempX0 + ROTATION_MATRIX[0][1] * y0;
+			x0 = ROTATION_MATRIX[0][0] * x0 + ROTATION_MATRIX[0][1] * y0;
 			y0 = ROTATION_MATRIX[1][0] * tempX0 + ROTATION_MATRIX[1][1] * y0;
-			x1 = ROTATION_MATRIX[0][0] * tempX1 + ROTATION_MATRIX[0][1] * y1;
+			x1 = ROTATION_MATRIX[0][0] * x1 + ROTATION_MATRIX[0][1] * y1;
 			y1 = ROTATION_MATRIX[1][0] * tempX1 + ROTATION_MATRIX[1][1] * y1;
 		}*/
-
-		amplitude *= PERSISTANCE;
-		frequency *= 2;
-	}
-}
