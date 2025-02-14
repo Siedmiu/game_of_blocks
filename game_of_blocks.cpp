@@ -167,15 +167,22 @@ int main() {
     view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
 
     //projekcja prespektywa
+    float nearPlane = 0.1f;
+    float farPlane = 600.0f; //this should be automatically adjusted to render distance
     glm::mat4 projection = glm::mat4(1.0f);
-    projection = glm::perspective(glm::radians(FOV), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 1000.0f);
-    //projection = glm::ortho(0.0f, 10.0f, 0.0f, 10.0f, 0.1f, 1000.0f);
+    projection = glm::perspective(glm::radians(FOV), (float)SCR_WIDTH / (float)SCR_HEIGHT, nearPlane, farPlane);
+    //projection = glm::ortho(0.0f, 60.0f, 0.0f, 10.0f, 0.1f, 1000.0f);
 
+    //use shader wraper for this
     unsigned int modelLoc = glGetUniformLocation(mainShader, "model");
     unsigned int viewLoc = glGetUniformLocation(mainShader, "view");
+    unsigned int nearLoc = glGetUniformLocation(mainShader, "near");
+    unsigned int farLoc = glGetUniformLocation(mainShader, "far");
 
     glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
     glUniformMatrix4fv(viewLoc, 1, GL_FALSE, &view[0][0]);
+    glUniform1f(nearLoc, nearPlane);
+    glUniform1f(farLoc, farPlane);
 
     shaders.setMat4("projection", projection);
     //-------------------------------------------------------------------//

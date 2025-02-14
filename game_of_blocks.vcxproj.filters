@@ -91,7 +91,6 @@
     <Text Include="chrono.txt" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="fragment_shader.glsl" />
     <None Include="framebuffer_basic_fragment_shader.glsl" />
     <None Include="framebuffer_universal_vertex_shader.glsl" />
     <None Include="geometry_shader.glsl" />
@@ -104,5 +103,6 @@
     <None Include="fb_fs_Basic_Kuwahara_Filter.glsl" />
     <None Include="fb_fs_canny_overlay.glsl" />
     <None Include="fb_fs_split_screen.glsl" />
+    <None Include="fragment_shader.glsl" />
   </ItemGroup>
 </Project>

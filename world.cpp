@@ -880,8 +880,8 @@ void world::polynomialNoiseGridCell(float* gridCellnoiseMap, float gridX0, float
 
 	float gridCellSizeReciprocal = 1.0f / gridCellLength;
 
-	int startX = abs((int)(gridX0) % CHUNK_LENGTH);
-	int startY = abs((int)(gridY0) % CHUNK_LENGTH);
+	int startX = ((int)(gridX0) % CHUNK_LENGTH + CHUNK_LENGTH) % CHUNK_LENGTH;
+	int startY = ((int)(gridY0) % CHUNK_LENGTH + CHUNK_LENGTH) % CHUNK_LENGTH;
 
 	//interpolation weights
 	float wx, wy;
@@ -919,6 +919,13 @@ void world::noiseGenerator(int chunkX, int chunkY, float* noiseMap) {
 
 	for (unsigned int octave = 0; octave < OCTAVES; octave++) {
 		std::fill(tempNoiseMap, tempNoiseMap + (CHUNK_LENGTH * CHUNK_LENGTH), 0.0f);
+
+		//rotation to prevent domain alignment
+		//for (int i = 0; i < octave; i++) {
+		//	float tempX0 = x0;
+		//	x0 = ROTATION_MATRIX[0][0] * x0 + ROTATION_MATRIX[0][1] * y0;
+		//	y0 = ROTATION_MATRIX[1][0] * tempX0 + ROTATION_MATRIX[1][1] * y0;
+		//}
 
 		for (int gx = 0; gx < numCellsPerRow; gx++) {
 			for (int gy = 0; gy < numCellsPerRow; gy++) {
@@ -961,13 +968,3 @@ void world::noiseGenerator(int chunkX, int chunkY, float* noiseMap) {
 	auto duration = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
 	std::cout << duration << std::endl;
 */
-
-//rotate by rotation matrix "octave" amount of times to prevent domain overlap
-		/*
-		for (int i = 0; i < octave; i++) {
-			float tempX0 = x0, tempX1 = x1;
-			x0 = ROTATION_MATRIX[0][0] * x0 + ROTATION_MATRIX[0][1] * y0;
-			y0 = ROTATION_MATRIX[1][0] * tempX0 + ROTATION_MATRIX[1][1] * y0;
-			x1 = ROTATION_MATRIX[0][0] * x1 + ROTATION_MATRIX[0][1] * y1;
-			y1 = ROTATION_MATRIX[1][0] * tempX1 + ROTATION_MATRIX[1][1] * y1;
-		}*/

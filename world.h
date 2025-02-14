@@ -21,7 +21,7 @@ const float CHUNK_LENGTH_RECIPROCAL = 1.0f / CHUNK_LENGTH;
 class world {
 private:
 	//WORLD SETTINGS
-	const unsigned short int RENDER_DISTANCE_CHUNKS = 15, BLOCK_SIZE = 1;
+	const unsigned short int RENDER_DISTANCE_CHUNKS = 25, BLOCK_SIZE = 1;
 	static const unsigned int CHUNK_VOLUME = CHUNK_HEIGHT * CHUNK_LENGTH * CHUNK_LENGTH;
 	static const unsigned short int REGION_SIZE = 256;
 

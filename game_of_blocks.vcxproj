@@ -175,7 +175,9 @@
     <None Include="fb_fs_intensity_gradient.glsl" />
     <None Include="fb_fs_magnitude_thresholding.glsl" />
     <None Include="fb_fs_split_screen.glsl" />
-    <None Include="fragment_shader.glsl" />
+    <None Include="fragment_shader.glsl">
+      <FileType>Document</FileType>
+    </None>
     <None Include="framebuffer_basic_fragment_shader.glsl" />
     <None Include="framebuffer_universal_vertex_shader.glsl" />
     <None Include="geometry_shader.glsl" />
