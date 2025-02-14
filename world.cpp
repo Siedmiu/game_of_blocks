@@ -765,6 +765,11 @@ inline float world::fadeCheap(float a) {
 	return a * a * (3 - 2 * a);
 }
 
+inline float world::fadeCheapDerivative(float a) {
+	//calculates the derivative of fadeCheap function at point a
+	return 6 * a * (1 - a);
+}
+
 std::pair<float, float> world::gradientRNGvec2(int i_x, int i_y) {
 	//based on the coordinates and the seed value calculates
 	//the gradient unit vectors on the grid edges
@@ -868,7 +873,7 @@ void world::perlinNoiseOctave(int chunkX, int chunkY, float* perlinNoise, float 
 	}
 }
 
-void world::polynomialNoiseGridCell(float* gridCellnoiseMap, float gridX0, float gridY0, int gridCellLength) {
+void world::polynomialNoiseGridCell(float* gridCellNoiseMap, float* gridCellSteepnessMap, float gridX0, float gridY0, int gridCellLength, float amplitude) {
 	float gridX1 = gridX0 + gridCellLength;
 	float gridY1 = gridY0 + gridCellLength;
 
@@ -885,6 +890,7 @@ void world::polynomialNoiseGridCell(float* gridCellnoiseMap, float gridX0, float
 
 	//interpolation weights
 	float wx, wy;
+	glm::vec2 noiseSample{};
 
 	for (uint8_t x = 0; x < gridCellLength; x++) {
 		wx = x * gridCellSizeReciprocal;
@@ -892,19 +898,36 @@ void world::polynomialNoiseGridCell(float* gridCellnoiseMap, float gridX0, float
 		for (uint8_t y = 0; y < gridCellLength; y++) {
 			wy = y * gridCellSizeReciprocal;
 
-			gridCellnoiseMap[get2dCoord(startX + x, startY + y)] = polynomialNoiseSample(wx, wy, a, b, c, d);
+			noiseSample = polynomialNoiseSample(wx, wy, a, b, c, d);
+			gridCellNoiseMap[get2dCoord(startX + x, startY + y)] = noiseSample.x;
+			gridCellSteepnessMap[get2dCoord(startX + x, startY + y)] += noiseSample.y * amplitude;
 		}
 	}
 }
 
-inline float world::polynomialNoiseSample(float dx, float dy, float a, float b, float c, float d) {
-	//should remain between 0 and 1
-	return (
-		a +
-		(b - a) * fadeCheap(dx) +
-		(c - a) * fadeCheap(dy) +
-		(a - b - c + d) * fadeCheap(dx) * fadeCheap(dy)
-		);
+inline glm::vec2 world::polynomialNoiseSample(float dx, float dy, float a, float b, float c, float d) {
+	//function returns the value of the noise and
+	//the stepness of the noise function
+	//calculated using magic (math)
+	//n(u,v) = k0 + k1u + k2v + k3uv
+	// where a = ko, (b-a) = k1, (c-a) = k2, (a-b-c+d) = k3
+	// and u = f(x), v = f(y), f(a)=
+	//dn/dx = k1 + k3vu'(x)
+	//dn/dy = k2 + k3uv'(y)
+
+	float u = fadeCheap(dx);
+	float v = fadeCheap(dy);
+	float du = fadeCheapDerivative(dx);
+	float dv = fadeCheapDerivative(dy);
+
+	float dndx = (b - a) * du + (a - b - c + d) * v * du;
+	float dndy = (c - a) * dv + (a - b - c + d) * u * dv;
+	float n = a +
+		(b - a) * u +
+		(c - a) * v +
+		(a - b - c + d) * u * v;
+
+	return glm::vec2(n, sqrt(dndx * dndx + dndy * dndy));
 }
 
 void world::noiseGenerator(int chunkX, int chunkY, float* noiseMap) {
@@ -914,11 +937,13 @@ void world::noiseGenerator(int chunkX, int chunkY, float* noiseMap) {
 	int numCellsPerRow = 1;
 
 	float* tempNoiseMap = new float[CHUNK_LENGTH * CHUNK_LENGTH];
+	float* tempSteepnessMap = new float[CHUNK_LENGTH * CHUNK_LENGTH];
 	float gridX0 = chunkX;
 	float gridY0 = chunkY;
 
 	for (unsigned int octave = 0; octave < OCTAVES; octave++) {
 		std::fill(tempNoiseMap, tempNoiseMap + (CHUNK_LENGTH * CHUNK_LENGTH), 0.0f);
+		std::fill(tempSteepnessMap, tempSteepnessMap + (CHUNK_LENGTH * CHUNK_LENGTH), 0.0f);
 
 		//rotation to prevent domain alignment
 		//for (int i = 0; i < octave; i++) {
@@ -933,14 +958,16 @@ void world::noiseGenerator(int chunkX, int chunkY, float* noiseMap) {
 				gridY0 = chunkY * CHUNK_LENGTH + gy * gridCellLength;
 
 				//Generate noise
-				polynomialNoiseGridCell(tempNoiseMap, gridX0, gridY0, gridCellLength);
+				polynomialNoiseGridCell(tempNoiseMap, tempSteepnessMap, gridX0, gridY0, gridCellLength, amplitude);
 			}
 		}
 
 		//add octave's noise contribution
 		for (uint8_t x = 0; x < CHUNK_LENGTH; x++) {
 			for (uint8_t y = 0; y < CHUNK_LENGTH; y++) {
-				noiseMap[get2dCoord(x, y)] += tempNoiseMap[get2dCoord(x, y)] * amplitude;
+				//noiseMap[get2dCoord(x, y)] += tempSteepnessMap[get2dCoord(x, y)]; //display only the gradient
+				noiseMap[get2dCoord(x, y)] += tempNoiseMap[get2dCoord(x, y)] * amplitude / (1 + STEEPNESS_FACTOR * tempSteepnessMap[get2dCoord(x, y)]);
+				//noiseMap[get2dCoord(x, y)] += tempNoiseMap[get2dCoord(x, y)] * amplitude; //no gradient influence
 			}
 		}
 
@@ -959,6 +986,7 @@ void world::noiseGenerator(int chunkX, int chunkY, float* noiseMap) {
 			noiseMap[get2dCoord(x, y)] /= totalAmplitude;
 		}
 	}
+	delete[] tempSteepnessMap;
 	delete[] tempNoiseMap;
 }
 

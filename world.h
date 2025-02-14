@@ -29,6 +29,7 @@ private:
 	static const unsigned int SEED = 1234;
 	const unsigned int OCTAVES = 3;
 	const float PERSISTANCE = 0.5f;
+	const float STEEPNESS_FACTOR = 1.5f;
 	const unsigned short int MIN_HEIGHT = 20;
 
 	const float ROTATION_MATRIX[2][2] = {
@@ -157,13 +158,14 @@ private:
 	float lerp(float a, float b, float weight);
 	float fade(float a);
 	inline float fadeCheap(float a);
+	inline float fadeCheapDerivative(float a);
 	float scalarProductNormalized(float dx, float dy, std::pair<float, float> gradient);
 	std::pair<float, float> gradientRNGvec2(int x, int y);
 	float gradientRNG(float i_x, float i_y);
 
-	inline float polynomialNoiseSample(float dx, float dy, float a, float b, float c, float d);
+	inline glm::vec2 polynomialNoiseSample(float dx, float dy, float a, float b, float c, float d);
 	void perlinNoiseOctave(int chunkX, int chunkY, float* perlinNoise, float frequency, float amplitude);
-	void polynomialNoiseGridCell(float* gridCellnoiseMap, float x0, float y0, int gridCellLength);
+	void polynomialNoiseGridCell(float* gridCellnoiseMap, float* gridCellSteepnessMap, float x0, float y0, int gridCellLength, float amplitude);
 	void noiseGenerator(int chunkX, int chunkY, float* noiseMap);
 
 	void newChunk(int x, int y);
