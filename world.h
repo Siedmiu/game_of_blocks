@@ -15,6 +15,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+//max chunk height is 255
 const unsigned short int CHUNK_HEIGHT = 100, CHUNK_LENGTH = 16;
 const float CHUNK_LENGTH_RECIPROCAL = 1.0f / CHUNK_LENGTH;
 
@@ -23,14 +24,14 @@ private:
 	//WORLD SETTINGS
 	const unsigned short int RENDER_DISTANCE_CHUNKS = 25, BLOCK_SIZE = 1;
 	static const unsigned int CHUNK_VOLUME = CHUNK_HEIGHT * CHUNK_LENGTH * CHUNK_LENGTH;
-	static const unsigned short int REGION_SIZE = 256;
+	static const unsigned short int REGION_SIZE_CHUNKS = 32;
 
 	//GENERATION SETTINGS
 	static const unsigned int SEED = 1234;
 	const unsigned int OCTAVES = 3;
 	const float PERSISTANCE = 0.5f;
 	const float STEEPNESS_FACTOR = 1.5f;
-	const unsigned short int MIN_HEIGHT = 20;
+	const unsigned short int MIN_HEIGHT = 5;
 
 	const float ROTATION_MATRIX[2][2] = {
 	{4.0f / 5.0f, -3.0f / 5.0f},
@@ -115,7 +116,8 @@ private:
 	};
 
 	struct region {
-		float regionData[REGION_SIZE * REGION_SIZE];
+		//regionHeightData = 1MB
+		uint8_t regionHeightData[REGION_SIZE_CHUNKS * REGION_SIZE_CHUNKS * CHUNK_LENGTH * CHUNK_LENGTH];
 	};
 
 	//colison
@@ -165,8 +167,8 @@ private:
 
 	inline glm::vec2 polynomialNoiseSample(float dx, float dy, float a, float b, float c, float d);
 	void perlinNoiseOctave(int chunkX, int chunkY, float* perlinNoise, float frequency, float amplitude);
-	void polynomialNoiseGridCell(float* gridCellnoiseMap, float* gridCellSteepnessMap, float x0, float y0, int gridCellLength, float amplitude);
-	void noiseGenerator(int chunkX, int chunkY, float* noiseMap);
+	void polynomialNoiseGridCell(float* gridCellnoiseMap, float* gridCellSteepnessMap, float x0, float y0, int gridCellLength, float amplitude, unsigned int octave);
+	void noiseGenerator(int chunkX, int chunkY, uint8_t* noiseMap);
 
 	void newChunk(int x, int y);
 	void deleteChunk(int x, int y);

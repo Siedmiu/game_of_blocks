@@ -329,7 +329,7 @@ void world::createChunks() {
 	lastPlayerChunkY = playerChunkY;
 
 	std::unordered_set<std::pair<int, int>, pairHash> requiredChunks;
-	//tolerance chunks to reduce loading when player moves across chunk borders
+	//tolerance chunks to reduce loading when player moves across chunk borders repetably
 	std::unordered_set<std::pair<int, int>, pairHash> toleranceChunks;
 
 	//determine the circle of chunks
@@ -424,9 +424,10 @@ void world::generateChunkMesh(chunk& c) {
 	uint8_t blockID;
 	bool back = true, front = true, left = true, right = true, bottom = true, top = true;
 
+	//using uint8_t for for loops is stupid and inconsistant with the rest of the code
 	for (uint8_t cx = 0; cx < CHUNK_LENGTH; cx++) {
 		for (uint8_t cy = 0; cy < CHUNK_LENGTH; cy++) {
-			for (uint8_t cz = 0; cz < CHUNK_HEIGHT; cz++) {
+			for (int cz = CHUNK_HEIGHT - 1; cz >= 0; cz--) {
 				blockID = c.chunkBlockData[get3dCoord(cx, cy, cz)];
 				if (blockID == 32) continue; //skip air
 				blockPosition = glm::vec3(cx, cz, cy);
@@ -434,29 +435,40 @@ void world::generateChunkMesh(chunk& c) {
 				//check neighbours
 				if (cx != 0) if (c.chunkBlockData[get3dCoord(cx - 1, cy, cz)] != AIR_ID) {
 					left = false;
-				};
+				}
 				if (cx != CHUNK_LENGTH - 1) if (c.chunkBlockData[get3dCoord(cx + 1, cy, cz)] != AIR_ID) {
 					right = false;
-				};
+				}
 				if (cy != 0) if (c.chunkBlockData[get3dCoord(cx, cy - 1, cz)] != AIR_ID) {
 					back = false;
-				};
+				}
 				if (cy != CHUNK_LENGTH - 1) if (c.chunkBlockData[get3dCoord(cx, cy + 1, cz)] != AIR_ID) {
 					front = false;
-				};
+				}
 				if (cz != 0) if (c.chunkBlockData[get3dCoord(cx, cy, cz - 1)] != AIR_ID) {
 					bottom = false;
-				};
+				}
 				if (cz == 0) {
 					bottom = false;
-				};
+				}
 				if (cz != CHUNK_HEIGHT - 1) if (c.chunkBlockData[get3dCoord(cx, cy, cz + 1)] != AIR_ID) {
 					top = false;
-				};
+				}
+
+				//no caves so the inside is solid
+				if (!(left || right || back || front || bottom || top)) {
+					back = true;
+					front = true;
+					left = true;
+					right = true;
+					bottom = true;
+					top = true;
+					break;
+				}
 
 				//store 6 floats in 1 float
 				//5 bits for x; 5 bits for y; 8 bits for z; 5 bit for texID; 3 bits for faceDirection; 26 bits total, 6 unoccupied
-				//max x,y = 32; max z = 256; max texID = 32, max faceDirection = 8 (6 needed);
+				//max x,y = 32; max z = 255; max texID = 32, max faceDirection = 8 (6 needed);
 				//0b 00000 00000000 00000 00000 000 ------
 				//
 				union floatToUli {
@@ -669,17 +681,18 @@ void world::newChunk(int x, int y) {
 	newChunk->SSBO = 0;
 
 	//set block data
-	float noiseMap[CHUNK_LENGTH * CHUNK_LENGTH]{};
+	uint8_t noiseMap[CHUNK_LENGTH * CHUNK_LENGTH]{};
 	noiseGenerator(x, y, noiseMap);
 
 	for (uint8_t cx = 0; cx < CHUNK_LENGTH; cx++) {
 		for (uint8_t cy = 0; cy < CHUNK_LENGTH; cy++) {
 
-			uint8_t height = (uint8_t)(MIN_HEIGHT + noiseMap[get2dCoord(cx, cy)] * (CHUNK_HEIGHT - MIN_HEIGHT));
-			if (height >= CHUNK_HEIGHT) {
-				height = CHUNK_HEIGHT - 1;
-			}
-			else if (height < MIN_HEIGHT) height = MIN_HEIGHT;
+			uint8_t height = noiseMap[get2dCoord(cx, cy)];
+			//if (height >= CHUNK_HEIGHT) {
+			//	height = CHUNK_HEIGHT - 1;
+			//}
+			//else 
+			if (height < MIN_HEIGHT) height = MIN_HEIGHT;
 
 			//uint8_t height = (cx % 4 || cy % 4) ? 2 : 90;
 			
@@ -694,7 +707,14 @@ void world::newChunk(int x, int y) {
 		}
 	}
 
+
+	auto t1 = std::chrono::high_resolution_clock::now();
+
 	generateChunkMesh(*newChunk);
+
+	auto t2 = std::chrono::high_resolution_clock::now();
+	auto duration = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
+	std::cout << duration << std::endl;
 
 	//std::lock_guard<std::mutex> lock(chunksMutex);
 
@@ -873,9 +893,21 @@ void world::perlinNoiseOctave(int chunkX, int chunkY, float* perlinNoise, float 
 	}
 }
 
-void world::polynomialNoiseGridCell(float* gridCellNoiseMap, float* gridCellSteepnessMap, float gridX0, float gridY0, int gridCellLength, float amplitude) {
+void world::polynomialNoiseGridCell(float* gridCellNoiseMap, float* gridCellSteepnessMap, float gridX0, float gridY0, int gridCellLength, float amplitude, unsigned int octave) {
 	float gridX1 = gridX0 + gridCellLength;
 	float gridY1 = gridY0 + gridCellLength;
+
+	//rotation to prevent domain alignment
+	/*
+	for (int i = 0; i < octave; i++) {
+		float tempX0 = gridX0;
+		gridX0 = ROTATION_MATRIX[0][0] * gridX0 + ROTATION_MATRIX[0][1] * gridY0;
+		gridY0 = ROTATION_MATRIX[1][0] * tempX0 + ROTATION_MATRIX[1][1] * gridY0;
+
+		float tempX1 = gridX1;
+		gridX1 = ROTATION_MATRIX[0][0] * gridX1 + ROTATION_MATRIX[0][1] * gridY1;
+		gridY1 = ROTATION_MATRIX[1][0] * tempX1 + ROTATION_MATRIX[1][1] * gridY1;
+	}*/
 
 	//grid cell edge values
 	float a = gradientRNG(gridX0, gridY0);
@@ -930,27 +962,21 @@ inline glm::vec2 world::polynomialNoiseSample(float dx, float dy, float a, float
 	return glm::vec2(n, sqrt(dndx * dndx + dndy * dndy));
 }
 
-void world::noiseGenerator(int chunkX, int chunkY, float* noiseMap) {
+void world::noiseGenerator(int chunkX, int chunkY, uint8_t* noiseMap) {
 	float amplitude = 1.0f;
 	float totalAmplitude = 0.0f;
 	int gridCellLength = CHUNK_LENGTH;  //will be chunk region later
 	int numCellsPerRow = 1;
 
-	float* tempNoiseMap = new float[CHUNK_LENGTH * CHUNK_LENGTH];
-	float* tempSteepnessMap = new float[CHUNK_LENGTH * CHUNK_LENGTH];
+	float* tempNoiseMap = new float[CHUNK_LENGTH * CHUNK_LENGTH] {};
+	float* octaveNoiseMap = new float[CHUNK_LENGTH * CHUNK_LENGTH];
+	float* octaveSteepnessMap = new float[CHUNK_LENGTH * CHUNK_LENGTH];
 	float gridX0 = chunkX;
 	float gridY0 = chunkY;
 
 	for (unsigned int octave = 0; octave < OCTAVES; octave++) {
-		std::fill(tempNoiseMap, tempNoiseMap + (CHUNK_LENGTH * CHUNK_LENGTH), 0.0f);
-		std::fill(tempSteepnessMap, tempSteepnessMap + (CHUNK_LENGTH * CHUNK_LENGTH), 0.0f);
-
-		//rotation to prevent domain alignment
-		//for (int i = 0; i < octave; i++) {
-		//	float tempX0 = x0;
-		//	x0 = ROTATION_MATRIX[0][0] * x0 + ROTATION_MATRIX[0][1] * y0;
-		//	y0 = ROTATION_MATRIX[1][0] * tempX0 + ROTATION_MATRIX[1][1] * y0;
-		//}
+		std::fill(octaveNoiseMap, octaveNoiseMap + (CHUNK_LENGTH * CHUNK_LENGTH), 0.0f);
+		std::fill(octaveSteepnessMap, octaveSteepnessMap + (CHUNK_LENGTH * CHUNK_LENGTH), 0.0f);
 
 		for (int gx = 0; gx < numCellsPerRow; gx++) {
 			for (int gy = 0; gy < numCellsPerRow; gy++) {
@@ -958,16 +984,16 @@ void world::noiseGenerator(int chunkX, int chunkY, float* noiseMap) {
 				gridY0 = chunkY * CHUNK_LENGTH + gy * gridCellLength;
 
 				//Generate noise
-				polynomialNoiseGridCell(tempNoiseMap, tempSteepnessMap, gridX0, gridY0, gridCellLength, amplitude);
+				polynomialNoiseGridCell(octaveNoiseMap, octaveSteepnessMap, gridX0, gridY0, gridCellLength, amplitude, octave);
 			}
 		}
 
 		//add octave's noise contribution
 		for (uint8_t x = 0; x < CHUNK_LENGTH; x++) {
 			for (uint8_t y = 0; y < CHUNK_LENGTH; y++) {
-				//noiseMap[get2dCoord(x, y)] += tempSteepnessMap[get2dCoord(x, y)]; //display only the gradient
-				noiseMap[get2dCoord(x, y)] += tempNoiseMap[get2dCoord(x, y)] * amplitude / (1 + STEEPNESS_FACTOR * tempSteepnessMap[get2dCoord(x, y)]);
-				//noiseMap[get2dCoord(x, y)] += tempNoiseMap[get2dCoord(x, y)] * amplitude; //no gradient influence
+				//tempNoiseMap[get2dCoord(x, y)] += octaveSteepnessMap[get2dCoord(x, y)]; //display only the gradient
+				tempNoiseMap[get2dCoord(x, y)] += octaveNoiseMap[get2dCoord(x, y)] * amplitude / (1 + STEEPNESS_FACTOR * octaveSteepnessMap[get2dCoord(x, y)]);
+				//tempNoiseMap[get2dCoord(x, y)] += octaveNoiseMap[get2dCoord(x, y)] * amplitude; //no gradient influence
 			}
 		}
 
@@ -983,10 +1009,11 @@ void world::noiseGenerator(int chunkX, int chunkY, float* noiseMap) {
 	// Normalize the final noise map
 	for (uint8_t x = 0; x < CHUNK_LENGTH; x++) {
 		for (uint8_t y = 0; y < CHUNK_LENGTH; y++) {
-			noiseMap[get2dCoord(x, y)] /= totalAmplitude;
+			noiseMap[get2dCoord(x, y)] = uint8_t((tempNoiseMap[get2dCoord(x, y)] / totalAmplitude) * CHUNK_HEIGHT);
 		}
 	}
-	delete[] tempSteepnessMap;
+	delete[] octaveSteepnessMap;
+	delete[] octaveNoiseMap;
 	delete[] tempNoiseMap;
 }
 
