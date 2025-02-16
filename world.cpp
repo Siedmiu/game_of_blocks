@@ -3,7 +3,9 @@
 #include <chrono>
 //#include <thread>
 
-world::world(player& playerOne, camera& cam) : playerOne(playerOne), cam(cam) {}
+world::world(player& playerOne, camera& cam) : playerOne(playerOne), cam(cam) {
+	generateRegions();
+}
 
 //old AABB
 /*
@@ -428,30 +430,30 @@ void world::generateChunkMesh(chunk& c) {
 	for (uint8_t cx = 0; cx < CHUNK_LENGTH; cx++) {
 		for (uint8_t cy = 0; cy < CHUNK_LENGTH; cy++) {
 			for (int cz = CHUNK_HEIGHT - 1; cz >= 0; cz--) {
-				blockID = c.chunkBlockData[get3dCoord(cx, cy, cz)];
+				blockID = c.chunkBlockData[get3dCoordChunk(cx, cy, cz)];
 				if (blockID == 32) continue; //skip air
 				blockPosition = glm::vec3(cx, cz, cy);
 
 				//check neighbours
-				if (cx != 0) if (c.chunkBlockData[get3dCoord(cx - 1, cy, cz)] != AIR_ID) {
+				if (cx != 0) if (c.chunkBlockData[get3dCoordChunk(cx - 1, cy, cz)] != AIR_ID) {
 					left = false;
 				}
-				if (cx != CHUNK_LENGTH - 1) if (c.chunkBlockData[get3dCoord(cx + 1, cy, cz)] != AIR_ID) {
+				if (cx != CHUNK_LENGTH - 1) if (c.chunkBlockData[get3dCoordChunk(cx + 1, cy, cz)] != AIR_ID) {
 					right = false;
 				}
-				if (cy != 0) if (c.chunkBlockData[get3dCoord(cx, cy - 1, cz)] != AIR_ID) {
+				if (cy != 0) if (c.chunkBlockData[get3dCoordChunk(cx, cy - 1, cz)] != AIR_ID) {
 					back = false;
 				}
-				if (cy != CHUNK_LENGTH - 1) if (c.chunkBlockData[get3dCoord(cx, cy + 1, cz)] != AIR_ID) {
+				if (cy != CHUNK_LENGTH - 1) if (c.chunkBlockData[get3dCoordChunk(cx, cy + 1, cz)] != AIR_ID) {
 					front = false;
 				}
-				if (cz != 0) if (c.chunkBlockData[get3dCoord(cx, cy, cz - 1)] != AIR_ID) {
+				if (cz != 0) if (c.chunkBlockData[get3dCoordChunk(cx, cy, cz - 1)] != AIR_ID) {
 					bottom = false;
 				}
 				if (cz == 0) {
 					bottom = false;
 				}
-				if (cz != CHUNK_HEIGHT - 1) if (c.chunkBlockData[get3dCoord(cx, cy, cz + 1)] != AIR_ID) {
+				if (cz != CHUNK_HEIGHT - 1) if (c.chunkBlockData[get3dCoordChunk(cx, cy, cz + 1)] != AIR_ID) {
 					top = false;
 				}
 
@@ -670,6 +672,39 @@ void world::generateChunkMesh(chunk& c) {
 	c.notInFOV = false;
 }
 
+void world::generateRegions() {
+	std::unordered_set<std::pair<int, int>, pairHash> requiredRegions;
+
+	for (int dx = 0; dx <= REGION_RENDER_RADIUS; ++dx) {
+		for (int dy = 0; dy <= REGION_RENDER_RADIUS; ++dy) {
+			if (dx * dx + dy * dy <= REGION_RENDER_RADIUS * REGION_RENDER_RADIUS) {
+				const std::pair<int, int> coords[] = {
+					{dx, dy}, {-dx, dy}, {dx, -dy}, {-dx, -dy}
+				};
+				for (const auto& coord : coords) {
+					requiredRegions.insert(coord);
+				}
+			}
+		}
+	}
+
+	for (const auto& regionPair : requiredRegions) {
+		if (regions.find(regionPair) == regions.end()) {
+			auto newRegion = std::make_unique<region>();
+
+			newRegion->regionX = regionPair.first;
+			newRegion->regionY = regionPair.second;
+
+			noiseGenerator(regionPair.first, regionPair.second, newRegion->regionHeightData);
+
+			regions.emplace(regionPair, std::move(newRegion));
+			existingRegions.insert(regionPair);
+
+			std::cout << "Region " << regionPair.first << " " << regionPair.second << " generated.\n";
+		}
+	}
+}
+
 void world::newChunk(int x, int y) {
 	//auto zamiast std::unordered_map<std::pair<int, int>, chunk, pairHash> chunks;
 	//unique ptr heap;
@@ -680,29 +715,51 @@ void world::newChunk(int x, int y) {
 	newChunk->VAO = 0;
 	newChunk->SSBO = 0;
 
-	//set block data
+	//Take height data stored in regions
 	uint8_t noiseMap[CHUNK_LENGTH * CHUNK_LENGTH]{};
-	noiseGenerator(x, y, noiseMap);
+
+	//region coords
+	int regionX = (x < 0) ? ((x + 1) / REGION_LENGTH_CHUNKS) - 1 : (x / REGION_LENGTH_CHUNKS);
+	int regionY = (y < 0) ? ((y + 1) / REGION_LENGTH_CHUNKS) - 1 : (y / REGION_LENGTH_CHUNKS);
+
+	//chunk within region
+	int localChunkX = (x < 0) ? ((x % REGION_LENGTH_CHUNKS) + REGION_LENGTH_CHUNKS) : (x % REGION_LENGTH_CHUNKS);
+	int localChunkY = (y < 0) ? ((y % REGION_LENGTH_CHUNKS) + REGION_LENGTH_CHUNKS) : (y % REGION_LENGTH_CHUNKS);
+
+
+	auto it = regions.find({ regionX, regionY });
+	if (it != regions.end()) {
+		uint8_t* regionData = it->second->regionHeightData;
+
+		int offsetX = localChunkX * CHUNK_LENGTH;
+		int offsetY = localChunkY * CHUNK_LENGTH;
+
+		for (int i = 0; i < CHUNK_LENGTH; ++i) {
+			for (int j = 0; j < CHUNK_LENGTH; ++j) {
+				noiseMap[get2dCoordChunk(i, j)] = regionData[get2dCoordRegion(i + offsetX, j + offsetY)];
+			}
+		}
+	}
 
 	for (uint8_t cx = 0; cx < CHUNK_LENGTH; cx++) {
 		for (uint8_t cy = 0; cy < CHUNK_LENGTH; cy++) {
 
-			uint8_t height = noiseMap[get2dCoord(cx, cy)];
-			//if (height >= CHUNK_HEIGHT) {
-			//	height = CHUNK_HEIGHT - 1;
-			//}
-			//else 
+			uint8_t height = noiseMap[get2dCoordChunk(cx, cy)];
+			if (height >= CHUNK_HEIGHT) {
+				height = CHUNK_HEIGHT - 1;
+			}
+			else 
 			if (height < MIN_HEIGHT) height = MIN_HEIGHT;
 
 			//uint8_t height = (cx % 4 || cy % 4) ? 2 : 90;
 			
 			for (uint8_t cz = 0; cz <= height - 2; ++cz) {
-				newChunk->chunkBlockData[get3dCoord(cx, cy, cz)] = STONE_ID;
+				newChunk->chunkBlockData[get3dCoordChunk(cx, cy, cz)] = STONE_ID;
 			}
-			newChunk->chunkBlockData[get3dCoord(cx, cy, height - 1)] = DIRT_ID;
-			newChunk->chunkBlockData[get3dCoord(cx, cy, height)] = GRASS_ID;
+			newChunk->chunkBlockData[get3dCoordChunk(cx, cy, height - 1)] = DIRT_ID;
+			newChunk->chunkBlockData[get3dCoordChunk(cx, cy, height)] = GRASS_ID;
 			for (uint8_t cz = height + 1; cz < CHUNK_HEIGHT; ++cz) {
-				newChunk->chunkBlockData[get3dCoord(cx, cy, cz)] = AIR_ID;
+				newChunk->chunkBlockData[get3dCoordChunk(cx, cy, cz)] = AIR_ID;
 			}
 		}
 	}
@@ -749,7 +806,7 @@ uint8_t world::getBlockWorldspace(int x, int y, int z) {
 uint8_t world::getBlock(int chunkX, int chunkY, uint8_t x, uint8_t y, uint8_t z) {
 	auto it = chunks.find({ chunkX, chunkY });
 	if (it != chunks.end()) {
-		return it->second->chunkBlockData[get3dCoord(x, y, z)];
+		return it->second->chunkBlockData[get3dCoordChunk(x, y, z)];
 	}
 	return 0; //nie ma chunka
 }
@@ -757,7 +814,7 @@ uint8_t world::getBlock(int chunkX, int chunkY, uint8_t x, uint8_t y, uint8_t z)
 void world::setBlock(int chunkX, int chunkY, uint8_t x, uint8_t y, uint8_t z, uint8_t blockType) {
 	auto it = chunks.find({ chunkX, chunkY });
 	if (it != chunks.end()) {
-		it->second->chunkBlockData[get3dCoord(x, y, z)] = blockType;
+		it->second->chunkBlockData[get3dCoordChunk(x, y, z)] = blockType;
 	}
 }
 
@@ -888,7 +945,7 @@ void world::perlinNoiseOctave(int chunkX, int chunkY, float* perlinNoise, float 
 			bottom_pair = lerp(map_down_left, map_down_right, wx);
 
 			//interpolate vertically
-			perlinNoise[get2dCoord(x, y)] += lerp(bottom_pair, top_pair, wy) * amplitude;
+			perlinNoise[get2dCoordChunk(x, y)] += lerp(bottom_pair, top_pair, wy) * amplitude;
 		}
 	}
 }
@@ -917,22 +974,22 @@ void world::polynomialNoiseGridCell(float* gridCellNoiseMap, float* gridCellStee
 
 	float gridCellSizeReciprocal = 1.0f / gridCellLength;
 
-	int startX = ((int)(gridX0) % CHUNK_LENGTH + CHUNK_LENGTH) % CHUNK_LENGTH;
-	int startY = ((int)(gridY0) % CHUNK_LENGTH + CHUNK_LENGTH) % CHUNK_LENGTH;
+	int startX = ((int)(gridX0) % REGION_LENGTH + REGION_LENGTH) % REGION_LENGTH;
+	int startY = ((int)(gridY0) % REGION_LENGTH + REGION_LENGTH) % REGION_LENGTH;
 
 	//interpolation weights
 	float wx, wy;
 	glm::vec2 noiseSample{};
 
-	for (uint8_t x = 0; x < gridCellLength; x++) {
+	for (int x = 0; x < gridCellLength; x++) {
 		wx = x * gridCellSizeReciprocal;
 
-		for (uint8_t y = 0; y < gridCellLength; y++) {
+		for (int y = 0; y < gridCellLength; y++) {
 			wy = y * gridCellSizeReciprocal;
 
 			noiseSample = polynomialNoiseSample(wx, wy, a, b, c, d);
-			gridCellNoiseMap[get2dCoord(startX + x, startY + y)] = noiseSample.x;
-			gridCellSteepnessMap[get2dCoord(startX + x, startY + y)] += noiseSample.y * amplitude;
+			gridCellNoiseMap[get2dCoordRegion(startX + x, startY + y)] = noiseSample.x;
+			gridCellSteepnessMap[get2dCoordRegion(startX + x, startY + y)] += noiseSample.y * amplitude;
 		}
 	}
 }
@@ -962,26 +1019,26 @@ inline glm::vec2 world::polynomialNoiseSample(float dx, float dy, float a, float
 	return glm::vec2(n, sqrt(dndx * dndx + dndy * dndy));
 }
 
-void world::noiseGenerator(int chunkX, int chunkY, uint8_t* noiseMap) {
+void world::noiseGenerator(int regionX, int regionY, uint8_t* noiseMap) {
 	float amplitude = 1.0f;
 	float totalAmplitude = 0.0f;
-	int gridCellLength = CHUNK_LENGTH;  //will be chunk region later
+	int gridCellLength = REGION_LENGTH;  //will be chunk region later
 	int numCellsPerRow = 1;
 
-	float* tempNoiseMap = new float[CHUNK_LENGTH * CHUNK_LENGTH] {};
-	float* octaveNoiseMap = new float[CHUNK_LENGTH * CHUNK_LENGTH];
-	float* octaveSteepnessMap = new float[CHUNK_LENGTH * CHUNK_LENGTH];
-	float gridX0 = chunkX;
-	float gridY0 = chunkY;
+	float* tempNoiseMap = new float[REGION_LENGTH * REGION_LENGTH] {};
+	float* octaveNoiseMap = new float[REGION_LENGTH * REGION_LENGTH];
+	float* octaveSteepnessMap = new float[REGION_LENGTH * REGION_LENGTH];
+	float gridX0 = regionX;
+	float gridY0 = regionY;
 
 	for (unsigned int octave = 0; octave < OCTAVES; octave++) {
-		std::fill(octaveNoiseMap, octaveNoiseMap + (CHUNK_LENGTH * CHUNK_LENGTH), 0.0f);
-		std::fill(octaveSteepnessMap, octaveSteepnessMap + (CHUNK_LENGTH * CHUNK_LENGTH), 0.0f);
+		std::fill(octaveNoiseMap, octaveNoiseMap + (REGION_LENGTH * REGION_LENGTH), 0.0f);
+		std::fill(octaveSteepnessMap, octaveSteepnessMap + (REGION_LENGTH * REGION_LENGTH), 0.0f);
 
 		for (int gx = 0; gx < numCellsPerRow; gx++) {
 			for (int gy = 0; gy < numCellsPerRow; gy++) {
-				gridX0 = chunkX * CHUNK_LENGTH + gx * gridCellLength;
-				gridY0 = chunkY * CHUNK_LENGTH + gy * gridCellLength;
+				gridX0 = regionX * REGION_LENGTH + gx * gridCellLength;
+				gridY0 = regionY * REGION_LENGTH + gy * gridCellLength;
 
 				//Generate noise
 				polynomialNoiseGridCell(octaveNoiseMap, octaveSteepnessMap, gridX0, gridY0, gridCellLength, amplitude, octave);
@@ -989,11 +1046,11 @@ void world::noiseGenerator(int chunkX, int chunkY, uint8_t* noiseMap) {
 		}
 
 		//add octave's noise contribution
-		for (uint8_t x = 0; x < CHUNK_LENGTH; x++) {
-			for (uint8_t y = 0; y < CHUNK_LENGTH; y++) {
-				//tempNoiseMap[get2dCoord(x, y)] += octaveSteepnessMap[get2dCoord(x, y)]; //display only the gradient
-				tempNoiseMap[get2dCoord(x, y)] += octaveNoiseMap[get2dCoord(x, y)] * amplitude / (1 + STEEPNESS_FACTOR * octaveSteepnessMap[get2dCoord(x, y)]);
-				//tempNoiseMap[get2dCoord(x, y)] += octaveNoiseMap[get2dCoord(x, y)] * amplitude; //no gradient influence
+		for (int x = 0; x < REGION_LENGTH; x++) {
+			for (int y = 0; y < REGION_LENGTH; y++) {
+				//tempNoiseMap[get2dCoordRegion(x, y)] += octaveSteepnessMap[get2dCoordRegion(x, y)]; //display only the gradient
+				tempNoiseMap[get2dCoordRegion(x, y)] += octaveNoiseMap[get2dCoordRegion(x, y)] * amplitude / (1 + STEEPNESS_FACTOR * octaveSteepnessMap[get2dCoordRegion(x, y)]);
+				//tempNoiseMap[get2dCoordRegion(x, y)] += octaveNoiseMap[get2dCoordRegion(x, y)] * amplitude; //no gradient influence
 			}
 		}
 
@@ -1007,9 +1064,9 @@ void world::noiseGenerator(int chunkX, int chunkY, uint8_t* noiseMap) {
 	}
 
 	// Normalize the final noise map
-	for (uint8_t x = 0; x < CHUNK_LENGTH; x++) {
-		for (uint8_t y = 0; y < CHUNK_LENGTH; y++) {
-			noiseMap[get2dCoord(x, y)] = uint8_t((tempNoiseMap[get2dCoord(x, y)] / totalAmplitude) * CHUNK_HEIGHT);
+	for (int x = 0; x < REGION_LENGTH; x++) {
+		for (int y = 0; y < REGION_LENGTH; y++) {
+			noiseMap[get2dCoordRegion(x, y)] = uint8_t((tempNoiseMap[get2dCoordRegion(x, y)] / totalAmplitude) * CHUNK_HEIGHT);
 		}
 	}
 	delete[] octaveSteepnessMap;

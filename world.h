@@ -16,21 +16,22 @@
 #include <glm/gtc/type_ptr.hpp>
 
 //max chunk height is 255
-const unsigned short int CHUNK_HEIGHT = 100, CHUNK_LENGTH = 16;
+const unsigned short int CHUNK_HEIGHT = 255, CHUNK_LENGTH = 16;
 const float CHUNK_LENGTH_RECIPROCAL = 1.0f / CHUNK_LENGTH;
 
 class world {
 private:
 	//WORLD SETTINGS
-	const unsigned short int RENDER_DISTANCE_CHUNKS = 25, BLOCK_SIZE = 1;
+	const unsigned short int RENDER_DISTANCE_CHUNKS = 30, BLOCK_SIZE = 1;
 	static const unsigned int CHUNK_VOLUME = CHUNK_HEIGHT * CHUNK_LENGTH * CHUNK_LENGTH;
-	static const unsigned short int REGION_SIZE_CHUNKS = 32;
+	static const unsigned short int REGION_LENGTH_CHUNKS = 32, REGION_RENDER_RADIUS = 6; //17
+	const unsigned short int REGION_LENGTH = REGION_LENGTH_CHUNKS * CHUNK_LENGTH;
 
 	//GENERATION SETTINGS
 	static const unsigned int SEED = 1234;
-	const unsigned int OCTAVES = 3;
+	const unsigned int OCTAVES = 6;
 	const float PERSISTANCE = 0.5f;
-	const float STEEPNESS_FACTOR = 1.5f;
+	const float STEEPNESS_FACTOR = 2.0f;
 	const unsigned short int MIN_HEIGHT = 5;
 
 	const float ROTATION_MATRIX[2][2] = {
@@ -106,6 +107,12 @@ private:
 		uint8_t chunkBlockData[CHUNK_VOLUME]{};
 	};
 
+	struct region {
+		int regionX{}, regionY{};
+		//regionHeightData = 1MB
+		uint8_t regionHeightData[REGION_LENGTH_CHUNKS * REGION_LENGTH_CHUNKS * CHUNK_LENGTH * CHUNK_LENGTH] {};
+	};
+
 	struct pairHash {
 		std::size_t operator()(const std::pair<int, int>& pair) const {
 			//funkcja oblicza hash dla unordered_map aby adresowac chunki
@@ -115,10 +122,12 @@ private:
 		}
 	};
 
-	struct region {
-		//regionHeightData = 1MB
-		uint8_t regionHeightData[REGION_SIZE_CHUNKS * REGION_SIZE_CHUNKS * CHUNK_LENGTH * CHUNK_LENGTH];
-	};
+	//region data can't be a unique pointer //WHY?! it was 4 months ago I dont remember :(
+	std::unordered_map<std::pair<int, int>, std::unique_ptr<region>, pairHash> regions;
+	std::unordered_set<std::pair<int, int>, pairHash> existingRegions;
+
+	std::unordered_map<std::pair<int, int>, std::unique_ptr<chunk>, pairHash> chunks;
+	std::unordered_set<std::pair<int, int>, pairHash> existingChunks;
 
 	//colison
 	/*
@@ -143,17 +152,12 @@ private:
 		glm::vec3 overlapDistance{};
 	};
 
-	//region data can't be a unique pointer
-	std::unordered_map<std::pair<int, int>, std::unique_ptr<region>, pairHash> regions;
-	std::unordered_set<std::pair<int, int>, pairHash> existingRegions;
-
-	std::unordered_map<std::pair<int, int>, std::unique_ptr<chunk>, pairHash> chunks;
-	std::unordered_set<std::pair<int, int>, pairHash> existingChunks;
-
 	//overlapInfo overlapAABB(const player::Aabb& playerAABB, const player::Aabb& blockAABB);
 	//overlapInfoTruncation overlapAABBtruncation(const player::Aabb& playerAABB, const player::Aabb& blockAABB);
 	overlapInfo sweptAABBcolisonCheckInfo(int x, int y, int z) const;
 	void generateChunkMesh(chunk& c);
+
+	void generateRegions();
 
 	//perlin noise generationm
 	float cubicInterpolator(float a, float b, float weight);
@@ -168,7 +172,7 @@ private:
 	inline glm::vec2 polynomialNoiseSample(float dx, float dy, float a, float b, float c, float d);
 	void perlinNoiseOctave(int chunkX, int chunkY, float* perlinNoise, float frequency, float amplitude);
 	void polynomialNoiseGridCell(float* gridCellnoiseMap, float* gridCellSteepnessMap, float x0, float y0, int gridCellLength, float amplitude, unsigned int octave);
-	void noiseGenerator(int chunkX, int chunkY, uint8_t* noiseMap);
+	void noiseGenerator(int regionX, int regionY, uint8_t* noiseMap);
 
 	void newChunk(int x, int y);
 	void deleteChunk(int x, int y);
@@ -178,11 +182,14 @@ private:
 	void setBlock(int chunkX, int chunkY, uint8_t x, uint8_t y, uint8_t z, uint8_t blockType);
 
 	//inline podmienia kod tam gdzie uzywamy funkcji
-	inline int get3dCoord(uint8_t x, uint8_t y, uint8_t z) const {
+	inline int get3dCoordChunk(uint8_t x, uint8_t y, uint8_t z) const {
 		return x + CHUNK_LENGTH * (y + CHUNK_LENGTH * z);
 	}
-	inline int get2dCoord(uint8_t x, uint8_t y) const {
+	inline int get2dCoordChunk(uint8_t x, uint8_t y) const {
 		return x + CHUNK_LENGTH * y;
+	}
+	inline int get2dCoordRegion(unsigned short int x, unsigned short int y) const {
+		return x + REGION_LENGTH * y;
 	}
 
 public:
